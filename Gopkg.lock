@@ -2,14 +2,44 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/lib/pq"
+  packages = [
+    ".",
+    "oid"
+  ]
+  revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
+
+[[projects]]
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
+
+[[projects]]
   name = "github.com/zeebo/errs"
   packages = ["."]
   revision = "8153a6cd4ba0ca3013a037e14ccd7f7f5a7b40ac"
   version = "v0.2.0"
 
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "1a580b3eff7814fc9b40602fd35256c63b50f491"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = [
+    "unix",
+    "windows"
+  ]
+  revision = "7c87d13f8e835d2fb3a70a2912c811ed0c1d241b"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c91cdac97de966662d091d1b8fdbeeceac51a31b1d4e4244464bbc4de52e86f3"
+  inputs-digest = "65828a4777328093783f8a865a96b4c2fe57ffe585b8e74c67ced081983594fc"
   solver-name = "gps-cdcl"
   solver-version = 1
