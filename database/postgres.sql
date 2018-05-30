@@ -10,3 +10,13 @@ CREATE TABLE sessions (
   createDate TIMESTAMP NOT NULL,
   lastUsedDate TIMESTAMP NOT NULL
 );
+
+CREATE TABLE emails (
+  pk BIGSERIAL PRIMARY KEY,
+  userPk INTEGER REFERENCES users(pk) ON DELETE CASCADE,
+  fullEmail VARCHAR UNIQUE NOT NULL,
+  createDate TIMESTAMP NOT NULL,
+  saltedHash VARCHAR NOT NULL,
+);
+
+
