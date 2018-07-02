@@ -2,10 +2,25 @@
 
 
 [[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
+  branch = "default"
+  name = "bitbucket.org/pkg/inflect"
+  packages = ["."]
+  revision = "8961c3750a47b8c0b3e118d52513b97adf85a7e8"
+
+[[projects]]
+  name = "github.com/jawher/mow.cli"
+  packages = [
+    ".",
+    "internal/container",
+    "internal/flow",
+    "internal/fsm",
+    "internal/lexer",
+    "internal/matcher",
+    "internal/parser",
+    "internal/values"
+  ]
+  revision = "2f22195f169da29d54624afd9eb83ada5c9e4ee9"
+  version = "v1.0.4"
 
 [[projects]]
   branch = "master"
@@ -17,22 +32,16 @@
   revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
 
 [[projects]]
-  name = "github.com/pmezard/go-difflib"
-  packages = ["difflib"]
-  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
-  version = "v1.0.0"
-
-[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
   version = "v1.0.5"
 
 [[projects]]
-  name = "github.com/stretchr/testify"
-  packages = ["assert"]
-  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
-  version = "v1.2.1"
+  branch = "master"
+  name = "github.com/spacemonkeygo/errors"
+  packages = ["."]
+  revision = "9064522e9fd1cda39b0ea2484105af3c66410fb3"
 
 [[projects]]
   name = "github.com/zeebo/errs"
@@ -52,6 +61,12 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/net"
+  packages = ["context"]
+  revision = "4cb1c02c05b0e749b0365f61ae859a8e0cfceed9"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
   packages = [
     "unix",
@@ -59,9 +74,33 @@
   ]
   revision = "7c87d13f8e835d2fb3a70a2912c811ed0c1d241b"
 
+[[projects]]
+  branch = "v1"
+  name = "gopkg.in/spacemonkeygo/dbx.v1"
+  packages = [
+    ".",
+    "ast",
+    "code",
+    "code/golang",
+    "consts",
+    "errutil",
+    "ir",
+    "ir/xform",
+    "sql",
+    "sqlgen",
+    "sqlgen/sqlbundle",
+    "sqlgen/sqlcompile",
+    "sqlgen/sqlembedgo",
+    "sqlgen/sqlhelpers",
+    "syntax",
+    "templates",
+    "tmplutil"
+  ]
+  revision = "65237a1ba5c6c12768e0ead33fd74d34864a9e5c"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e265ab5a26ca5c6798f7cc2dee7d9ba336f92a3e79b23b3ac0f6321705e7464d"
+  inputs-digest = "f6548aecfd5555d1d082421e02e6f5550f47477ed63d2fab02f4445c47715bd1"
   solver-name = "gps-cdcl"
   solver-version = 1
