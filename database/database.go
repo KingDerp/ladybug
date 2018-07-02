@@ -2,7 +2,10 @@ package database
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
+	"io"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -28,26 +31,65 @@ func Open(url string) (out *DB, err error) {
 }
 
 type User struct {
+	Pk       int64
+	FullName string
+}
+
+type Email struct {
+	Pk         int64
+	UserPk     int64
+	Address    string
+	CreateDate time.Time
+	SaltedHash string
+}
+
+type Session struct {
+	Pk         int64
+	UserPk     int64
+	Id         string
+	CreateDate time.Time
+}
+
+type UserUpdateFields struct {
 	Pk       int64  `json:"-"`
 	FullName string `json:"fullName"`
 }
 
-type Email struct {
-	Pk         int64     `json:"-"`
-	UserPk     int64     `json:"-"`
-	FullEmail  string    `json:"fullEmail"`
-	CreateDate time.Time `json:"-"`
-	SaltedHash string    `json:"-"`
+func (db *DB) UpdateUser(ctx context.Context, u *UserUpdateFields) error {
+
+	_, err := db.raw.Exec(`UPDATE users SET fullName = $1 WHERE pk = $2`,
+		u.FullName, u.Pk)
+	if err != nil {
+		return errs.Wrap(err)
+	}
+
+	return nil
 }
 
-func (db *DB) GetUserBySessionId(ctx context.Context, session_id string) (
-	out *User, err error) {
+type EmailUpdateFields struct {
+	Pk         int64  `json:"-"`
+	Email      string `json:"email"`
+	SaltedHash string `json:"-"`
+}
 
-	user := &User{}
+func (db *DB) UpdateEmail(ctx context.Context, e *EmailUpdateFields) error {
 
-	err = db.raw.QueryRow(`SELECT users.pk, users.fullName FROM users 
-	  JOIN sessions ON users.pk = sessions.user_pk WHERE sessions.id = $1`,
-		session_id).Scan(&user.Pk, &user.FullName)
+	_, err := db.raw.Exec(`UPDATE emails SET email = $1, saltedHash = $2 WHERE pk = $3`,
+		e.Email, e.SaltedHash, e.Pk)
+	if err != nil {
+		return errs.Wrap(err)
+	}
+
+	return nil
+}
+
+func (db *DB) GetUserByPk(ctx context.Context, user_pk int64) (user *User,
+	err error) {
+
+	user = &User{}
+
+	err = db.raw.QueryRow(`SELECT userPk, fullName FROM user WHERE userPk = $1`, user_pk).
+		Scan(&user.Pk, &user.FullName)
 	if err != nil {
 		return nil, errs.Wrap(err)
 	}
@@ -55,30 +97,97 @@ func (db *DB) GetUserBySessionId(ctx context.Context, session_id string) (
 	return user, nil
 }
 
-func (db *DB) CreateUserWithEmailNoReturn(full_name, full_email, salted_hash string) error {
+func (db *DB) GetUserPkBySessionId(ctx context.Context, session_id string) (
+	pk int64, err error) {
 
-	user := User{}
-	err := db.raw.QueryRow(`INSERT INTO users (fullName) VALUES ($1)`, full_name).
-		Scan(&user.Pk, &user.FullName)
+	err = db.raw.QueryRow(`SELECT userPk FROM sessions WHERE sessions.id = $1`,
+		session_id).Scan(&pk)
 	if err != nil {
-		return errs.Wrap(err)
+		return 0, errs.Wrap(err)
 	}
 
-	result, err := db.raw.Exec(`INSERT INTO emails (userPk, fullEmail, createDate, saltedHash) VALUES 
-	($1, $2, $3, $4)`, user.Pk, full_email, time.Now().UTC(), salted_hash)
+	return pk, nil
+}
+
+func (db *DB) CreateSession(ctx context.Context, user_pk int64) (out *Session, err error) {
+
+	b := make([]byte, 32)
+
+	_, err = io.ReadFull(rand.Reader, b)
 	if err != nil {
-		return errs.Wrap(err)
+		return nil, errs.Wrap(err)
 	}
 
-	num_rows, err := result.RowsAffected()
+	id := base64.URLEncoding.EncodeToString(b)
+
+	out = &Session{}
+	now := time.Now()
+	err = db.raw.QueryRow(`INSERT INTO sessions (userPk, id, createDate, lastUsedDate) VALUES (
+	  $1,$2,$3,$4) RETURNING userPk, id, createDate`, user_pk, id, now, now).Scan(
+		&out.UserPk, &out.Id, &out.CreateDate)
 	if err != nil {
-		return errs.Wrap(err)
-	}
-	if num_rows != 1 {
-		return errs.New("expected 1 row to be affected got %d", num_rows)
+		return nil, errs.Wrap(err)
 	}
 
-	return nil
+	return out, nil
+}
+
+func (db *DB) CreateUserWithEmail(ctx context.Context, full_name, address,
+	salted_hash string) (user *User, err error) {
+
+	user = &User{}
+	err = db.raw.QueryRow(`INSERT INTO users (fullName) VALUES ($1) RETURNING pk, fullName`,
+		full_name).Scan(&user.Pk, &user.FullName)
+	if err != nil {
+		return nil, errs.Wrap(err)
+	}
+
+	_, err = db.raw.Exec(`INSERT INTO emails (userPk, address, createDate, saltedHash) VALUES 
+	($1, $2, $3, $4)`, user.Pk, address, time.Now().UTC(), salted_hash)
+	if err != nil {
+		return nil, errs.Wrap(err)
+	}
+
+	return user, nil
+}
+
+func (db *DB) GetEmailsByUserPk(pk int64) (out []*Email, err error) {
+
+	rows, err := db.raw.Query(`SELECT emails.Pk, emails.userPk, emails.address emails.saltedHash 
+	FROM emails WHERE emails.userPk = $1`, pk)
+	if err != nil {
+		return nil, errs.Wrap(err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		email := &Email{}
+		err = rows.Scan(email.Pk, &email.UserPk, &email.Address,
+			&email.SaltedHash)
+		if err != nil {
+			return nil, errs.Wrap(err)
+		}
+
+		out = append(out, email)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errs.Wrap(err)
+	}
+
+	return out, nil
+}
+
+func (db *DB) GetEmailByAddress(address string) (out *Email, err error) {
+	err = db.raw.QueryRow(`SELECT emails.Pk, emails.userPk, emails.address emails.saltedHash 
+	FROM emails WHERE emails.address = $1`, address).Scan(&out.Pk, &out.UserPk, &out.Address,
+		&out.SaltedHash)
+	if err != nil {
+		return nil, errs.Wrap(err)
+	}
+
+	return out, nil
 }
 
 //func (db *DB) CreateEmail()
