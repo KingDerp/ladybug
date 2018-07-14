@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"encoding/base64"
 	"ladybug/database"
+	"strings"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/zeebo/errs"
@@ -120,7 +120,7 @@ func (u *UserServer) UpdateUser(ctx context.Context, req *UpdateUserRequest) (
 		return nil, err
 	}
 
-	if err := compareHash(hash, email.SaltedHash); err != nil {
+	if err := comparePasswordHash(hash, email.SaltedHash); err != nil {
 		return nil, err
 	}
 
@@ -171,9 +171,14 @@ func (u *UserServer) LogIn(ctx context.Context, req *LogInRequest) (resp *databa
 
 	var email *database.Email
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
-		email, err = tx.Get_Email_By_Address(ctx, database.Email_Address(req.Email))
+		email, err = tx.Find_Email_By_Address(ctx, database.Email_Address(
+			strings.ToLower(req.Email)))
 		if err != nil {
 			return err
+		}
+
+		if email == nil {
+			return errs.New("No email exists with that address")
 		}
 
 		return nil
@@ -182,17 +187,8 @@ func (u *UserServer) LogIn(ctx context.Context, req *LogInRequest) (resp *databa
 		return nil, err
 	}
 
-	hash, err := hashPassword(req.Password)
-	if err != nil {
+	if err := comparePasswordHash(req.Password, email.SaltedHash); err != nil {
 		return nil, err
-	}
-
-	if err := compareHash(hash, email.SaltedHash); err != nil {
-		return nil, err
-	}
-
-	if req.Email != email.Address {
-		return nil, errs.New("password or email do not match")
 	}
 
 	var session *database.Session
@@ -213,19 +209,23 @@ func (u *UserServer) LogIn(ctx context.Context, req *LogInRequest) (resp *databa
 	return session, nil
 }
 
-//TODO(mac): look at vim ctrl-p extentions for fuzzy file search
-func hashPassword(pw string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
+//HashPassword takes a string, creates a hash using that string and returns the hash in a string
+//format. One should note that GenerateFromPassword uses base64 encoding in it's logic.
+func hashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", errs.Wrap(err)
 	}
-
-	return base64.URLEncoding.EncodeToString(hash), nil
+	return string(hash), err
+	//return base64.URLEncoding.EncodeToString(hash), nil
 }
 
-//TODO(mac): test bcrypt password compnrison to make sure that it works
-func compareHash(a, b string) error {
-	if err := bcrypt.CompareHashAndPassword([]byte(a), []byte(b)); err != nil {
+//ComparePasswordHash - this funtion takes the unhashed version of the password and the hash to
+//compare it against. returns an error if there was an internal problem or if the hashed and
+//unhashed password do not match
+func comparePasswordHash(password, hash string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	if err != nil {
 		return errs.New("email or password does not match")
 	}
 	return nil

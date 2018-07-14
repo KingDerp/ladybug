@@ -25,7 +25,7 @@ func NewHandler(db *database.DB) *Handler {
 	mux := http.NewServeMux()
 
 	mux.Handle("/", a.CheckSessionCookie(http.HandlerFunc(rootHandler)))
-	mux.Handle("/login", http.HandlerFunc(u.userLogInHandler))
+	mux.Handle("/user/login", http.HandlerFunc(u.userLogInHandler))
 	mux.Handle("/user/sign-up", http.HandlerFunc(u.userSignUpHandler))
 	mux.Handle("/user", a.CheckSessionCookie(http.HandlerFunc(u.userHandler)))
 
