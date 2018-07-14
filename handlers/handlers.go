@@ -41,14 +41,15 @@ func (a *authMiddleware) CheckSessionCookie(handler http.Handler) http.Handler {
 			return
 		}
 
-		user_pk, err := a.db.GetUserPkBySessionId(req.Context(), cookie.Value)
+		pk_row, err := a.db.Get_Session_UserPk_By_Id(req.Context(),
+			database.Session_Id(cookie.Value))
 		if err != nil {
 			http.Error(w, fmt.Sprint(err), http.StatusUnauthorized)
 			return
 		}
 
 		c := req.Context()
-		req = req.WithContext(WithUserPk(c, user_pk))
+		req = req.WithContext(WithUserPk(c, pk_row.UserPk))
 
 		handler.ServeHTTP(w, req)
 	})

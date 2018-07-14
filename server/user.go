@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"ladybug/database"
 
+	uuid "github.com/satori/go.uuid"
 	"github.com/zeebo/errs"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,8 +31,10 @@ type Email struct {
 }
 
 type User struct {
-	FullName string   `json:"fullName"`
-	Emails   []*Email `json:"emails"`
+	FullName  string   `json:"fullName"`
+	FirstName string   `jsons:"firstName"`
+	LastName  string   `jsons:"lastName"`
+	Emails    []*Email `json:"emails"`
 }
 
 func EmailFromDB(email *database.Email) *Email {
@@ -51,44 +54,63 @@ func EmailsFromDB(emails []*database.Email) []*Email {
 
 func UserFromDB(user *database.User, emails []*database.Email) *User {
 	return &User{
-		FullName: user.FullName,
-		Emails:   EmailsFromDB(emails),
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Emails:    EmailsFromDB(emails),
 	}
 }
 
 func (u *UserServer) GetUser(ctx context.Context, req *GetUserRequest) (
 	resp *GetUserResponse, err error) {
 
-	user, err := u.db.GetUserByPk(ctx, req.UserPk)
+	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+		user, err := tx.Get_User_By_Pk(ctx, database.User_Pk(req.UserPk))
+		if err != nil {
+			return err
+		}
+
+		emails, err := tx.All_Email_By_UserPk(ctx, database.Email_UserPk(req.UserPk))
+		if err != nil {
+			return err
+		}
+
+		resp = &GetUserResponse{User: UserFromDB(user, emails)}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	emails, err := u.db.GetEmailsByUserPk(req.UserPk)
-	if err != nil {
-		return nil, err
-	}
-
-	return &GetUserResponse{User: UserFromDB(user, emails)}, nil
+	return resp, nil
 }
 
 type UpdateUserRequest struct {
-	FullName        string `json:"fullName"`
+	FirstName       string `json:"firstName"`
+	LastName        string `json:"lastName"`
 	Email           string `json:"email"`
 	CurrentPassword string `json:"currentPassword"`
 	NewPassword     string `json:"password"`
 }
 
 type UpdateUserResponse struct {
-	FullName string `json:"fullName"`
-	Email    string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
 }
 
 func (u *UserServer) UpdateUser(ctx context.Context, req *UpdateUserRequest) (
 	resp *UpdateUserResponse, err error) {
 
 	//TODO(mac): at what layer do I validate that these fields are not blank
-	email, err := u.db.GetEmailByAddress(req.Email)
+	var email *database.Email
+	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+		email, err = tx.Get_Email_By_Address(ctx, database.Email_Address(req.Email))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -102,56 +124,39 @@ func (u *UserServer) UpdateUser(ctx context.Context, req *UpdateUserRequest) (
 		return nil, err
 	}
 
-	user_updates := database.UserUpdateFields{Pk: email.UserPk, FullName: req.FullName}
-
-	//TODO(mac): these two code blocks seems like a really good place for a transaction
-	if err := u.db.UpdateUser(ctx, &user_updates); err != nil {
-		return nil, err
+	user_updates := database.User_Update_Fields{
+		FirstName: database.User_FirstName(req.FirstName),
+		LastName:  database.User_LastName(req.LastName),
 	}
 
-	email_updates := database.EmailUpdateFields{Pk: email.Pk, Email: email.Address, SaltedHash: hash}
-	if err := u.db.UpdateEmail(ctx, &email_updates); err != nil {
-		return nil, err
+	email_updates := database.Email_Update_Fields{
+		Address:    database.Email_Address(req.Email),
+		SaltedHash: database.Email_SaltedHash(hash),
 	}
 
-	return &UpdateUserResponse{FullName: req.FullName, Email: email.Address}, nil
-}
+	var user *database.User
+	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+		user, err = tx.Update_User_By_Pk(ctx, database.User_Pk(email.UserPk), user_updates)
+		if err != nil {
+			return err
+		}
 
-type SignUpRequest struct {
-	FullName string `json:"fullName"`
-	Password string `json:"password"`
-	Email    string `json:"email"`
-}
+		email, err = tx.Update_Email_By_Pk(ctx, database.Email_Pk(email.Pk), email_updates)
+		if err != nil {
+			return err
+		}
 
-type SignUpResponse struct {
-	Session *database.Session
-}
-
-func (u *UserServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *SignUpResponse,
-	err error) {
-
-	//TODO(mac): need to validate email as well
-	err = validateUser(req)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	hash, err := hashPassword(req.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := u.db.CreateUserWithEmail(ctx, req.FullName, req.Email, hash)
-	if err != nil {
-		return nil, err
-	}
-
-	session, err := u.db.CreateSession(ctx, user.Pk)
-	if err != nil {
-		return nil, err
-	}
-
-	return &SignUpResponse{Session: session}, nil
+	return &UpdateUserResponse{
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     email.Address,
+	}, nil
 }
 
 type LogInRequest struct {
@@ -164,7 +169,15 @@ type LogInRequest struct {
 func (u *UserServer) LogIn(ctx context.Context, req *LogInRequest) (resp *database.Session,
 	err error) {
 
-	email, err := u.db.GetEmailByAddress(req.Email)
+	var email *database.Email
+	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+		email, err = tx.Get_Email_By_Address(ctx, database.Email_Address(req.Email))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +195,17 @@ func (u *UserServer) LogIn(ctx context.Context, req *LogInRequest) (resp *databa
 		return nil, errs.New("password or email do not match")
 	}
 
-	session, err := u.db.CreateSession(ctx, email.UserPk)
+	var session *database.Session
+	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+
+		session, err = tx.Create_Session(ctx, database.Session_UserPk(email.UserPk),
+			database.Session_Id(uuid.NewV4().String()))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}

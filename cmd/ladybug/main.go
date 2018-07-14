@@ -31,7 +31,8 @@ func main() {
 
 func run(ctx context.Context) error {
 
-	db, err := database.Open("postgres://localhost/ladybug?user=ladybug&password=something_stupid")
+	db, err := database.Open("postgres",
+		"postgres://localhost/ladybug?user=ladybug&password=something_stupid")
 	if err != nil {
 		return err
 	}

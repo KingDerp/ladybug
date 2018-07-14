@@ -121,15 +121,14 @@ func (u *userHandler) userSignUpHandler(w http.ResponseWriter, req *http.Request
 
 	sign_up_resp, err := u.userServer.SignUp(ctx, &sign_up_req)
 	if err != nil {
-		http.Error(w, "server error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logrus.Errorf("%+v", err)
 		return
 	}
 
 	//TODO(mac) write a policy to determine how long until cookie expires
 	http.SetCookie(w, &http.Cookie{Name: "session", Value: sign_up_resp.Session.Id,
-		Expires: sign_up_resp.Session.CreateDate.Add(24 * time.Hour)})
-
+		Expires: sign_up_resp.Session.CreatedAt.Add(24 * time.Hour)})
 }
 
 func (u *userHandler) userLogInHandler(w http.ResponseWriter, req *http.Request) {
@@ -155,5 +154,5 @@ func (u *userHandler) userLogInHandler(w http.ResponseWriter, req *http.Request)
 	}
 
 	http.SetCookie(w, &http.Cookie{Name: "session", Value: session.Id,
-		Expires: session.CreateDate.Add(24 * time.Hour)})
+		Expires: session.CreatedAt.Add(24 * time.Hour)})
 }

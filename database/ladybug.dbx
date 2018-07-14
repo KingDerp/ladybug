@@ -1,0 +1,109 @@
+// -------------------------------------------------------------- //
+model user (
+	key    pk
+	unique id
+
+	field pk         serial64
+	field created_at timestamp ( autoinsert )
+	field updated_at timestamp ( autoinsert, autoupdate )
+	field id         text
+	field first_name text ( updatable )
+	field last_name  text ( updatable )
+)
+
+create user()
+
+create user( noreturn )
+
+read one ( 
+    select user 
+    where user.pk = ? 
+)
+
+update user ( where user.pk = ? )
+
+
+// -------------------------------------------------------------- //
+model email (
+	key    pk
+	unique id
+    unique address
+
+	field pk          serial64
+    field user_pk     int64
+	field created_at  timestamp ( autoinsert )
+    field address     text ( updatable )
+    field salted_hash text ( updatable )
+	field id          text
+)
+
+create email()
+
+create email ( noreturn )
+
+read all (
+    select email
+    where email.user_pk = ?
+)
+
+read one (
+    select email
+    where email.address = ?
+)
+
+read scalar (
+    select email
+    where email.address = ?
+)
+
+update email ( where email.pk = ? )
+
+// -------------------------------------------------------------- //
+model address (
+	key    pk
+	unique id
+
+	field pk             serial64
+    field user_pk        int64
+	field created_at     timestamp ( autoinsert )
+    field street_address text ( updatable )
+    field city           text ( updatable )
+    field state          text ( updatable )
+    field zip            int ( updatable )
+    field is_billing     bool
+	field id             text
+)
+
+create address()
+
+create address ( noreturn )
+
+read all (
+    select address
+    where address.user_pk = ?
+)
+
+update address ( where address.pk = ? )
+
+
+
+// -------------------------------------------------------------- //
+model session (
+	key    pk
+	unique id
+
+    field pk          serial64
+    field user_pk     int64
+    field id          text
+	field created_at  timestamp ( autoinsert )
+)
+
+create session()
+
+create session( noreturn )
+
+read one (
+    select session.user_pk
+    where session.id = ?
+)
+
