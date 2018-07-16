@@ -10,19 +10,15 @@ import (
 	"github.com/zeebo/errs"
 )
 
+//TODO(mac): user should really be renamed to buyer for clarity
+
 type SignUpRequest struct {
-	FirstName      string `json:"firstName"`
-	LastName       string `json:"lastName"`
-	Password       string `json:"password"`
-	Email          string `json:"email"`
-	BillingStreet  string `json:"billingStreet"`
-	BillingCity    string `json:"billingCity"`
-	BillingState   string `json:"billingState"`
-	BillingZip     int    `json:"billingZip"`
-	ShippingStreet string `json:"shippingStreet"`
-	ShippingCity   string `json:"shippingCity"`
-	ShippingState  string `json:"shippingState"`
-	ShippingZip    int    `json:"shippingZip"`
+	FirstName       string   `json:"firstName"`
+	LastName        string   `json:"lastName"`
+	Password        string   `json:"password"`
+	Email           string   `json:"email"`
+	BillingAddress  *Address `json:"billingAddress"`
+	ShippingAddress *Address `json"shippingAddress"`
 }
 
 type SignUpResponse struct {
@@ -35,14 +31,6 @@ func (u *UserServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *Sign
 	err = validateSignUpRequest(req)
 	if err != nil {
 		return nil, err
-	}
-
-	ship_addr_is_empty := shippingAddressIsEmpty(req)
-
-	if !ship_addr_is_empty {
-		if err := validateShippingAddress(req); err != nil {
-			return nil, err
-		}
 	}
 
 	hash, err := hashPassword(req.Password)
@@ -71,19 +59,19 @@ func (u *UserServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *Sign
 		}
 
 		err = tx.CreateNoReturn_Address(ctx, database.Address_UserPk(user.Pk),
-			database.Address_StreetAddress(req.BillingStreet),
-			database.Address_City(req.BillingCity),
-			database.Address_State(req.BillingState),
-			database.Address_Zip(req.BillingZip),
+			database.Address_StreetAddress(req.BillingAddress.StreetAddress),
+			database.Address_City(req.BillingAddress.City),
+			database.Address_State(req.BillingAddress.State),
+			database.Address_Zip(req.BillingAddress.Zip),
 			database.Address_IsBilling(true),
 			database.Address_Id(uuid.NewV4().String()))
 
-		if !ship_addr_is_empty {
+		if !addressIsEmpty(req.ShippingAddress) {
 			err = tx.CreateNoReturn_Address(ctx, database.Address_UserPk(user.Pk),
-				database.Address_StreetAddress(req.ShippingStreet),
-				database.Address_City(req.ShippingCity),
-				database.Address_State(req.ShippingCity),
-				database.Address_Zip(req.ShippingZip),
+				database.Address_StreetAddress(req.ShippingAddress.StreetAddress),
+				database.Address_City(req.ShippingAddress.City),
+				database.Address_State(req.ShippingAddress.State),
+				database.Address_Zip(req.ShippingAddress.Zip),
 				database.Address_IsBilling(false),
 				database.Address_Id(uuid.NewV4().String()))
 		}

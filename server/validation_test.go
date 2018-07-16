@@ -72,7 +72,7 @@ func TestValidateName(t *testing.T) {
 	}
 }
 
-func TestValidateUserPassword(t *testing.T) {
+func TestValidatePassword(t *testing.T) {
 	password_tests := []struct {
 		input    string
 		expected error
@@ -95,7 +95,7 @@ func TestValidateUserPassword(t *testing.T) {
 	}
 
 	for _, tt := range password_tests {
-		actual := validateUserPassword(tt.input)
+		actual := validatePassword(tt.input)
 
 		if tt.expected == nil {
 			require.Equal(t, actual, tt.expected,
@@ -111,56 +111,67 @@ func TestValidateUserPassword(t *testing.T) {
 	}
 }
 
-func TestValidateIncompleteBillingAddress(t *testing.T) {
+func TestValidateIncompleteAddress(t *testing.T) {
 	sur := &SignUpRequest{
-		BillingStreet: "",
-		BillingCity:   "Orlando",
-		BillingState:  "FL",
-		BillingZip:    98074,
+		BillingAddress: &Address{
+			StreetAddress: "",
+			City:          "Orlando",
+			State:         "FL",
+			Zip:           98074,
+		},
 	}
 
-	actual := validateBillingAddress(sur)
+	actual := validateAddress(sur.BillingAddress)
 	expected := errs.New("city, state, or street fields are blank for billing address")
 	require.EqualError(t, actual, expected.Error())
 }
 
-func TestValidateBillingZipIsZero(t *testing.T) {
+func TestValidateZipCodeIsZero(t *testing.T) {
 	sur := &SignUpRequest{
-		BillingStreet: "florida ln",
-		BillingCity:   "Orlando",
-		BillingState:  "FL",
-		BillingZip:    0,
+		BillingAddress: &Address{
+			StreetAddress: "florida ln",
+			City:          "Orlando",
+			State:         "FL",
+			Zip:           0,
+		},
 	}
 
-	actual := validateBillingAddress(sur)
+	actual := validateAddress(sur.BillingAddress)
 	expected := errs.New("you must provide a billing zip code")
 	require.EqualError(t, actual, expected.Error())
 }
 
-func TestValidateBillingStreetMissing(t *testing.T) {
+func TestValidateStreetMissing(t *testing.T) {
 	sur := &SignUpRequest{
-		BillingStreet: "",
-		BillingCity:   "Orlando",
-		BillingState:  "FL",
-		BillingZip:    0,
+		BillingAddress: &Address{
+			StreetAddress: "florida ln",
+			City:          "Orlando",
+			State:         "",
+			Zip:           0,
+		},
 	}
 
-	actual := validateBillingAddress(sur)
+	actual := validateAddress(sur.BillingAddress)
 	expected := errs.New("city, state, or street fields are blank for billing address")
 	require.EqualError(t, actual, expected.Error())
 }
 
-func TestShippingAddressIsEmpty(t *testing.T) {
-	actual := shippingAddressIsEmpty(&SignUpRequest{})
+func TestAddressIsEmpty(t *testing.T) {
+	sur := &SignUpRequest{}
+
+	actual := addressIsEmpty(sur.BillingAddress)
 	expected := true
 	require.Equal(t, actual, expected,
 		fmt.Sprintf("shippingAddress(sur)  actual:%t expected:%t", actual, expected))
 }
 
-func TestShippingAddressIsNotEmpty(t *testing.T) {
-	sur := &SignUpRequest{ShippingStreet: "not empty"}
+func TestAddressIsNotEmpty(t *testing.T) {
+	sur := &SignUpRequest{
+		ShippingAddress: &Address{
+			StreetAddress: "not empty"},
+	}
 
-	actual := shippingAddressIsEmpty(sur)
+	actual := addressIsEmpty(sur.ShippingAddress)
 	expected := false
 	require.Equal(t, actual, expected,
 		fmt.Sprintf("shippingAddress(sur)  actual:%t expected:%t", actual, expected))

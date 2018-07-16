@@ -19,15 +19,22 @@ type authMiddleware struct {
 func NewHandler(db *database.DB) *Handler {
 
 	a := &authMiddleware{db: db}
-	s := server.NewUserServer(db)
-	u := newUserHandler(s)
+	us := server.NewUserServer(db)
+	u := newUserHandler(us)
+
+	vs := server.NewVendorServer(db)
+	v := newVendorHandler(vs)
 
 	mux := http.NewServeMux()
 
+	//user endpoints
 	mux.Handle("/", a.CheckSessionCookie(http.HandlerFunc(rootHandler)))
 	mux.Handle("/user/login", http.HandlerFunc(u.userLogInHandler))
 	mux.Handle("/user/sign-up", http.HandlerFunc(u.userSignUpHandler))
 	mux.Handle("/user", a.CheckSessionCookie(http.HandlerFunc(u.userHandler)))
+
+	//vendor endpoints
+	mux.Handle("/vendor/sign-up", http.HandlerFunc(v.vendorSignUpHandler))
 
 	return &Handler{Handler: mux}
 }

@@ -107,3 +107,172 @@ read one (
     where session.id = ?
 )
 
+// -------------------------------------------------------------- //
+model vendor (
+    key pk
+    unique id
+
+    field pk                      serial64
+    field id                      text
+    field created_at              timestamp ( autoinsert )
+    field fein                    text ( updatable )
+)
+
+create vendor()
+
+create vendor ( noreturn )
+
+// -------------------------------------------------------------- //
+//NOTE: this model represents a point of contact for our marketplace not for buyers
+
+model executive_contact ( 
+    key pk
+    unique id
+
+    field pk                      serial64
+    field id                      text
+    field vendor_pk               int64
+    field first_name              text
+    field last_name               text
+    field created_at              timestamp ( autoinsert )
+)
+
+create executive_contact()
+
+create executive_contact( noreturn )
+
+// -------------------------------------------------------------- //
+model vendor_email (
+	key    pk
+	unique id
+    unique address
+
+	field pk                     serial64
+	field id                     text
+    field executive_contact_pk   int64
+	field created_at             timestamp ( autoinsert )
+    field address                text ( updatable )
+    field salted_hash            text ( updatable )
+)
+
+create vendor_email()
+
+create vendor_email( noreturn )
+
+// -------------------------------------------------------------- //
+model vendor_phone (
+	key    pk
+	unique id
+    unique phone_number
+
+    field pk                     serial64
+    field id                     text
+    field executive_contact_pk   int64
+    field phone_number           int
+    field country_code           int
+    field area_code              int
+)
+
+create vendor_phone()
+
+create vendor_phone( noreturn )
+
+// -------------------------------------------------------------- //
+model vendor_address (
+	key    pk
+	unique id
+
+	field pk             serial64
+    field vendor_pk      int64
+	field created_at     timestamp ( autoinsert )
+    field street_address text ( updatable )
+    field city           text ( updatable )
+    field state          text ( updatable )
+    field zip            int ( updatable )
+    field is_billing     bool
+	field id             text
+)
+
+create vendor_address()
+
+create vendor_address( noreturn )
+
+// -------------------------------------------------------------- //
+model product (
+    key pk
+    unique id
+
+    field pk               serial64
+    field id               text
+    field vendor_pk        int64
+    field created_at       timestamp ( autoinsert )
+    field price            float ( updatable )
+    field discount         float ( updatable )
+    field discount_active  bool ( updatable )
+    field sku              text ( updatable )
+    field google_bucket_id text ( updatable )
+    field product_reviewed bool ( updatable )  //this field indicates a review by our marketplace
+    field product_active   bool ( updatable )
+    field num_in_stock     int  ( updatable )
+    field description      text ( updatable )
+)
+
+create product()
+
+create product ( noreturn )
+
+update product ( where product.pk = ? ) 
+
+// -------------------------------------------------------------- //
+model trial_product (
+    key pk
+    unique id
+
+    field pk serial64
+    field id             text
+    field vendor_pk      int64
+    field user_pk        int64
+    field product_pk     int64
+    field created_at     timestamp ( autoinsert )
+    field trial_price    float
+    field is_returned    bool ( updatable )
+)
+
+// -------------------------------------------------------------- //
+model purchased_product (
+    key pk
+    unique id
+
+    field pk             serial64
+    field id             text
+    field vendor_pk      int64
+    field user_pk        int64
+    field product_pk     int64
+    field purchase_price float
+    field created_at     timestamp ( autoinsert )
+)
+
+create purchased_product()
+
+create purchased_product( noreturn )
+
+
+// -------------------------------------------------------------- //
+model vendor_session (
+	key    pk
+	unique id
+
+    field pk          serial64
+    field vendor_pk   int64
+    field id          text
+	field created_at  timestamp ( autoinsert )
+)
+
+create vendor_session()
+
+create vendor_session( noreturn )
+
+read one (
+    select vendor_session.vendor_pk
+    where vendor_session.id = ?
+)
