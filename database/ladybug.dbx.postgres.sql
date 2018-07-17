@@ -44,7 +44,7 @@ CREATE TABLE products (
 	discount_active boolean NOT NULL,
 	sku text NOT NULL,
 	google_bucket_id text NOT NULL,
-	product_reviewed boolean NOT NULL,
+	ladybug_approved boolean NOT NULL,
 	product_active boolean NOT NULL,
 	num_in_stock integer NOT NULL,
 	description text NOT NULL,

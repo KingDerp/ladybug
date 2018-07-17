@@ -15,7 +15,7 @@ type passwordPolicy struct {
 	validate    func(string) bool
 }
 
-//TODO(mac) all of these functions need testing
+//TODO(mac) this seems like it should be it's own package
 const (
 	minPasswordLen       = 8
 	maxPasswordLen       = 50

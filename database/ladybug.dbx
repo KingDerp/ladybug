@@ -211,7 +211,7 @@ model product (
     field discount_active  bool ( updatable )
     field sku              text ( updatable )
     field google_bucket_id text ( updatable )
-    field product_reviewed bool ( updatable )  //this field indicates a review by our marketplace
+    field ladybug_approved bool ( updatable )  //this field indicates a review by our marketplace
     field product_active   bool ( updatable )
     field num_in_stock     int  ( updatable )
     field description      text ( updatable )
