@@ -223,6 +223,16 @@ create product ( noreturn )
 
 update product ( where product.pk = ? ) 
 
+read paged (
+   select product
+   where product.product_active = true 
+)
+
+read all (
+   select product
+   where product.product_active = true 
+)
+
 // -------------------------------------------------------------- //
 model trial_product (
     key pk

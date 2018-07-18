@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"ladybug/database"
 
 	uuid "github.com/satori/go.uuid"
@@ -59,6 +58,5 @@ func (v *VendorServer) RegisterProduct(ctx context.Context, req *RegisterProduct
 		return nil, err
 	}
 
-	fmt.Println("product successfully registered")
 	return &RegisterProductResponse{Response: "Product has been succesfully registered"}, nil
 }

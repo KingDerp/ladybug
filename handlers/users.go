@@ -6,6 +6,7 @@ import (
 	"ladybug/database"
 	"ladybug/server"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -155,4 +156,40 @@ func (u *userHandler) userLogInHandler(w http.ResponseWriter, req *http.Request)
 
 	http.SetCookie(w, &http.Cookie{Name: "session", Value: session.Id,
 		Expires: session.CreatedAt.Add(24 * time.Hour)})
+}
+
+//TODO(mac): remove handler as a portion of the naming conventions it doesn't add anything of value
+func (u *userHandler) userProducts(w http.ResponseWriter, req *http.Request) {
+	if req.Method != "GET" {
+		http.Error(w, "method not allowed", http.StatusBadRequest)
+		return
+	}
+
+	ctx := req.Context()
+
+	category_param := req.URL.Query().Get("categories")
+	if category_param == "" {
+		category_param = "random"
+	}
+
+	categories := strings.Split(category_param, ",")
+	products_req := &server.ProductRequest{
+		ProductCategories: categories,
+	}
+
+	products, err := u.userServer.UserProducts(ctx, products_req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	b, err := json.Marshal(products)
+	if err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	h := w.Header()
+	h.Set("Content-Type", "application/json")
+	w.Write(b)
 }

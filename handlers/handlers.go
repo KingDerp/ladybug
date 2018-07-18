@@ -32,6 +32,7 @@ func NewHandler(db *database.DB) *Handler {
 	mux.Handle("/user/login", http.HandlerFunc(u.userLogInHandler))
 	mux.Handle("/user/sign-up", http.HandlerFunc(u.userSignUpHandler))
 	mux.Handle("/user", a.CheckUserSessionCookie(http.HandlerFunc(u.userHandler)))
+	mux.Handle("/products", http.HandlerFunc(u.userProducts))
 
 	//vendor endpoints
 	mux.Handle("/vendor/sign-up", http.HandlerFunc(v.vendorSignUpHandler))

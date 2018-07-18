@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -74,7 +73,6 @@ func (v *vendorHandler) vendorSignUpHandler(w http.ResponseWriter, req *http.Req
 func (v *vendorHandler) vendorProductHandler(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
-	fmt.Println("entered product register handler")
 	if req.Method != "POST" {
 		http.Error(w, "method not allowed", http.StatusBadRequest)
 		return
@@ -84,16 +82,12 @@ func (v *vendorHandler) vendorProductHandler(w http.ResponseWriter, req *http.Re
 	var product_request server.RegisterProductRequest
 	err := decoder.Decode(&product_request)
 	if err != nil {
-		fmt.Println("BLAH")
-		fmt.Println(err)
 		http.Error(w, "unable to parse json", http.StatusInternalServerError)
 		return
 	}
 
 	vendor_pk := GetVendorPk(req.Context())
 	if err != nil {
-		fmt.Println("BLAH1")
-		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -109,8 +103,6 @@ func (v *vendorHandler) vendorProductHandler(w http.ResponseWriter, req *http.Re
 
 	b, err := json.Marshal(register_prod_response)
 	if err != nil {
-		fmt.Println("BLAH")
-		fmt.Println(err)
 		http.Error(w, "server error", http.StatusInternalServerError)
 		return
 	}

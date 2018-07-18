@@ -10,6 +10,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	productRequestLimit = 10
+)
+
 type UserServer struct {
 	db *database.DB
 }
@@ -207,6 +211,69 @@ func (u *UserServer) LogIn(ctx context.Context, req *LogInRequest) (resp *databa
 	}
 
 	return session, nil
+}
+
+//serverProduct represents data from database.Products that is safe for public consumption
+//TODO(mac): I don't like the name of this struct is there a better name to differentiate it from
+//the database object?
+type serverProduct struct {
+	Price          float32 `json:"price"`
+	Discount       float32 `json:"discount"`
+	DiscountActive bool    `json:"discountActive"`
+	Sku            string  `json:"sku"`
+	GoogleBucketId string  `json:"googleBucketId"`
+	NumInStock     int     `json:"numInStock"`
+	Description    string  `json:"description"`
+}
+
+type ProductResponse struct {
+	Products []*serverProduct `json:"products"`
+}
+
+type ProductRequest struct {
+	ProductCategories []string `json:"productCategory"`
+}
+
+func ProductsFromDB(db_products []*database.Product) []*serverProduct {
+
+	products := []*serverProduct{}
+	for _, p := range db_products {
+		products = append(products, &serverProduct{
+			Price:          p.Price,
+			Discount:       p.Discount,
+			DiscountActive: p.DiscountActive,
+			Sku:            p.Sku,
+			GoogleBucketId: p.GoogleBucketId,
+			NumInStock:     p.NumInStock,
+			Description:    p.Description,
+		})
+	}
+
+	return products
+}
+
+//TODO(mac): this endpoint needs to be paginated
+func (u *UserServer) UserProducts(ctx context.Context, req *ProductRequest) (
+	resp *ProductResponse, err error) {
+
+	//TODO(mac): eventually we need to use the request to search for products by category
+	product_response := &ProductResponse{}
+	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+
+		db_products, err := tx.All_Product_By_ProductActive_Equal_True(ctx)
+		if err != nil {
+			return err
+		}
+
+		product_response.Products = ProductsFromDB(db_products)
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return product_response, nil
 }
 
 //HashPassword takes a string, creates a hash using that string and returns the hash in a string
