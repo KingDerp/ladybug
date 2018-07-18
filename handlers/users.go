@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/spacemonkeygo/dbx.v1/prettyprint"
 )
 
 type contextKey int
@@ -127,6 +128,7 @@ func (u *userHandler) userSignUpHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	prettyprint.Println(sign_up_resp)
 	//TODO(mac) write a policy to determine how long until cookie expires
 	http.SetCookie(w, &http.Cookie{Name: "session", Value: sign_up_resp.Session.Id,
 		Expires: sign_up_resp.Session.CreatedAt.Add(24 * time.Hour)})
@@ -192,4 +194,64 @@ func (u *userHandler) userProducts(w http.ResponseWriter, req *http.Request) {
 	h := w.Header()
 	h.Set("Content-Type", "application/json")
 	w.Write(b)
+}
+
+func (u *userHandler) sendMessage(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	if req.Method == "GET" {
+
+		user_pk := GetUserPk(req.Context())
+
+		messages, err := u.userServer.GetUserMessages(ctx, &server.GetMessageRequest{
+			UserPk: user_pk})
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(messages)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+
+	}
+
+	if req.Method == "POST" {
+		user_pk := GetUserPk(req.Context())
+
+		decoder := json.NewDecoder(req.Body)
+		var message_req server.PostUserMessageRequest
+		err := decoder.Decode(&message_req)
+		if err != nil {
+			http.Error(w, "unable to parse json", http.StatusInternalServerError)
+			return
+		}
+
+		message_req.UserPk = user_pk
+
+		message_resp, err := u.userServer.PostUserMessage(ctx, &message_req)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(message_resp)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+	}
+
+	http.Error(w, "method not allowed", http.StatusBadRequest)
+	return
 }

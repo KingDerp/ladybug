@@ -2,9 +2,12 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"ladybug/database"
 
 	uuid "github.com/satori/go.uuid"
+	"github.com/zeebo/errs"
+	"gopkg.in/spacemonkeygo/dbx.v1/prettyprint"
 )
 
 type VendorServer struct {
@@ -59,4 +62,85 @@ func (v *VendorServer) RegisterProduct(ctx context.Context, req *RegisterProduct
 	}
 
 	return &RegisterProductResponse{Response: "Product has been succesfully registered"}, nil
+}
+
+type GetVendorMessageRequest struct {
+	VendorPk int64
+}
+
+type GetVendorMessageResponse struct {
+	Messages []*serverMessage `json:"messages"`
+}
+
+func (v *VendorServer) GetVendorMessages(ctx context.Context, req *GetVendorMessageRequest) (
+	resp *GetVendorMessageResponse, err error) {
+
+	fmt.Printf("req.VendorPk: %d\n", req.VendorPk)
+
+	message_response := &GetVendorMessageResponse{}
+	err = v.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+
+		messages, err := tx.All_Message_By_VendorPk(ctx, database.Message_VendorPk(req.VendorPk))
+		if err != nil {
+			return err
+		}
+		fmt.Println("all vendor messages from db")
+		prettyprint.Println(messages)
+		message_response.Messages = MessagesFromDB(messages)
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return message_response, nil
+}
+
+type PostVendorMessageRequest struct {
+	VendorPk  int64  `json:"-"`
+	MessageId string `json:"messageId"`
+	Message   string `json:"message"`
+}
+
+type PostVendorMessageResponse struct {
+	Message *serverMessage `json:"message"`
+}
+
+func (v *VendorServer) PostVendorMessage(ctx context.Context, req *PostVendorMessageRequest) (
+	resp *PostVendorMessageResponse, err error) {
+
+	var message *database.Message
+	err = v.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+
+		parent_message, err := tx.Get_Message_By_Id(ctx, database.Message_Id(req.MessageId))
+		if err != nil {
+			return err
+		}
+
+		if parent_message.VendorPk != req.VendorPk {
+			return errs.New("unauthorized")
+		}
+
+		message, err = tx.Create_Message(ctx,
+			database.Message_VendorPk(req.VendorPk),
+			database.Message_UserPk(parent_message.UserPk),
+			database.Message_Id(uuid.NewV4().String()),
+			database.Message_BuyerSent(false),
+			database.Message_Message(req.Message),
+			database.Message_Create_Fields{
+				ParentPk: database.Message_ParentPk(parent_message.Pk),
+			},
+		)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &PostVendorMessageResponse{Message: MessageFromDB(message)}, nil
 }

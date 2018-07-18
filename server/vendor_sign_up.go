@@ -29,7 +29,8 @@ type VendorSignUpRequest struct {
 }
 
 type VendorSignUpResponse struct {
-	Session *database.VendorSession
+	Session  *database.VendorSession `json:"-"`
+	VendorId string                  `json:"vendorId"`
 }
 
 func (v *VendorServer) VendorSignUp(ctx context.Context, req *VendorSignUpRequest) (
@@ -49,6 +50,7 @@ func (v *VendorServer) VendorSignUp(ctx context.Context, req *VendorSignUpReques
 	}
 
 	var vendor_session *database.VendorSession
+	var vendor_id string
 	err = v.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 
 		vendor, err := tx.Create_Vendor(ctx,
@@ -57,6 +59,8 @@ func (v *VendorServer) VendorSignUp(ctx context.Context, req *VendorSignUpReques
 		if err != nil {
 			return err
 		}
+
+		vendor_id = vendor.Id
 
 		err = tx.CreateNoReturn_VendorAddress(ctx,
 			database.VendorAddress_VendorPk(vendor.Pk),
@@ -133,5 +137,5 @@ func (v *VendorServer) VendorSignUp(ctx context.Context, req *VendorSignUpReques
 		return nil, err
 	}
 
-	return &VendorSignUpResponse{Session: vendor_session}, nil
+	return &VendorSignUpResponse{Session: vendor_session, VendorId: vendor_id}, nil
 }

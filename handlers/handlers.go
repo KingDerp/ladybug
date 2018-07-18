@@ -27,17 +27,22 @@ func NewHandler(db *database.DB) *Handler {
 
 	mux := http.NewServeMux()
 
+	//TODO(mac): I'd like to be able to specify the route method and narrow it down to a function
+	//call that handles that verb
 	//user endpoints
 	mux.Handle("/", a.CheckUserSessionCookie(http.HandlerFunc(rootHandler)))
 	mux.Handle("/user/login", http.HandlerFunc(u.userLogInHandler))
 	mux.Handle("/user/sign-up", http.HandlerFunc(u.userSignUpHandler))
 	mux.Handle("/user", a.CheckUserSessionCookie(http.HandlerFunc(u.userHandler)))
 	mux.Handle("/products", http.HandlerFunc(u.userProducts))
+	mux.Handle("/user/messages", a.CheckUserSessionCookie(http.HandlerFunc(u.sendMessage)))
 
 	//vendor endpoints
 	mux.Handle("/vendor/sign-up", http.HandlerFunc(v.vendorSignUpHandler))
 	mux.Handle("/vendor/product", a.CheckVendorSessionCookie(
 		http.HandlerFunc(v.vendorProductHandler)))
+	mux.Handle("/vendor/messages", a.CheckVendorSessionCookie(
+		http.HandlerFunc(v.vendorMessageHandler)))
 
 	return &Handler{Handler: mux}
 }

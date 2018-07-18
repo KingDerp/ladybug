@@ -156,6 +156,10 @@ func addressIsEmpty(a *Address) bool {
 //for now the billing address fields just cannot be empty.
 //TODO(mac): research adress validator services and use them here
 func validateAddress(a *Address) error {
+	if a == nil {
+		return errs.New("no address was submitted")
+	}
+
 	if a.StreetAddress == "" ||
 		a.City == "" ||
 		a.State == "" {

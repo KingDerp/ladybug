@@ -20,6 +20,11 @@ read one (
     where user.pk = ? 
 )
 
+read one (
+    select user.pk
+    where user.id = ?
+)
+
 update user ( where user.pk = ? )
 
 
@@ -121,6 +126,11 @@ model vendor (
 create vendor()
 
 create vendor ( noreturn )
+
+read one (
+    select vendor.pk
+    where vendor.id = ?
+)
 
 // -------------------------------------------------------------- //
 //NOTE: this model represents a point of contact for our marketplace not for buyers
@@ -285,4 +295,38 @@ create vendor_session( noreturn )
 read one (
     select vendor_session.vendor_pk
     where vendor_session.id = ?
+)
+
+// -------------------------------------------------------------- //
+model message (
+	key    pk
+	unique id
+
+    field pk         serial64
+    field vendor_pk  int64
+    field user_pk    int64
+    field id         text
+    field created_at timestamp ( autoinsert )
+    field buyer_sent bool
+    field parent_pk  int64 ( nullable )//indicates the parent message to which this is a reply
+    field message    text
+)
+
+create message()
+
+create message( noreturn )
+
+read all (
+    select message
+    where message.user_pk = ?
+)
+
+read all (
+    select message
+    where message.vendor_pk = ?
+)
+
+read one (
+    select message
+    where message.id = ?
 )

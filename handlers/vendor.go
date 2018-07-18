@@ -68,6 +68,16 @@ func (v *vendorHandler) vendorSignUpHandler(w http.ResponseWriter, req *http.Req
 
 	http.SetCookie(w, &http.Cookie{Name: "session", Value: sign_up_resp.Session.Id,
 		Expires: sign_up_resp.Session.CreatedAt.Add(24 * time.Hour)})
+
+	b, err := json.Marshal(sign_up_resp)
+	if err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	h := w.Header()
+	h.Set("Content-Type", "application/json")
+	w.Write(b)
 }
 
 func (v *vendorHandler) vendorProductHandler(w http.ResponseWriter, req *http.Request) {
@@ -110,4 +120,60 @@ func (v *vendorHandler) vendorProductHandler(w http.ResponseWriter, req *http.Re
 	h := w.Header()
 	h.Set("Content-Type", "application/json")
 	w.Write(b)
+}
+
+func (v *vendorHandler) vendorMessageHandler(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	vendor_pk := GetVendorPk(req.Context())
+
+	if req.Method == "GET" {
+
+		message_resp, err := v.vendorServer.GetVendorMessages(ctx, &server.GetVendorMessageRequest{
+			VendorPk: vendor_pk})
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(message_resp)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+
+	}
+
+	if req.Method == "POST" {
+
+		decoder := json.NewDecoder(req.Body)
+		var message_req server.PostVendorMessageRequest
+		err := decoder.Decode(&message_req)
+		if err != nil {
+			http.Error(w, "unable to parse json", http.StatusInternalServerError)
+			return
+		}
+
+		message_req.VendorPk = vendor_pk
+
+		message_resp, err := v.vendorServer.PostVendorMessage(ctx, &message_req)
+		if err != nil {
+			http.Error(w, "error posting message", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(message_resp)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+	}
 }

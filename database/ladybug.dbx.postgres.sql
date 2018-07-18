@@ -34,6 +34,18 @@ CREATE TABLE executive_contacts (
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
 );
+CREATE TABLE messages (
+	pk bigserial NOT NULL,
+	vendor_pk bigint NOT NULL,
+	user_pk bigint NOT NULL,
+	id text NOT NULL,
+	created_at timestamp with time zone NOT NULL,
+	buyer_sent boolean NOT NULL,
+	parent_pk bigint,
+	message text NOT NULL,
+	PRIMARY KEY ( pk ),
+	UNIQUE ( id )
+);
 CREATE TABLE products (
 	pk bigserial NOT NULL,
 	id text NOT NULL,
