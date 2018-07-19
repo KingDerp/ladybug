@@ -1,4 +1,4 @@
-package server
+package validate
 
 import (
 	"fmt"
@@ -8,6 +8,13 @@ import (
 	"github.com/zeebo/errs"
 )
 
+type Address struct {
+	StreetAddress string `json:"streetAddress"`
+	City          string `json:"city"`
+	State         string `json:"state"`
+	Zip           int    `json"zip"`
+}
+
 type validateFunc func(r rune) bool
 
 type passwordPolicy struct {
@@ -15,11 +22,9 @@ type passwordPolicy struct {
 	validate    func(string) bool
 }
 
-//TODO(mac) this seems like it should be it's own package
 const (
-	minPasswordLen       = 8
-	maxPasswordLen       = 50
-	maxExecutiveContacts = 12
+	minPasswordLen = 8
+	maxPasswordLen = 50
 )
 
 var (
@@ -56,80 +61,6 @@ var (
 	emailRegex = regexp.MustCompile(`(?:[a-z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])`)
 )
 
-//validateVendorSignUpRequest verifies the required data for regisering as a vendor. returns an
-//error is there is a problem or incoming data does not match the requirement
-func validateVendorSignUpRequest(vsr *VendorSignUpRequest) error {
-
-	if len(vsr.ExecutiveContacts) > maxExecutiveContacts {
-		return errs.New("only a max of %d contacts are allowed", maxExecutiveContacts)
-	}
-
-	for _, e := range vsr.ExecutiveContacts {
-		if err := validateFullName(e.FirstName, e.LastName); err != nil {
-			return err
-		}
-
-		if err := validatePassword(e.Password); err != nil {
-			return err
-		}
-
-		//TODO(mac): for production I'll have to figure out how to send email validations with links
-		//etc.
-		if err := validateEmail(e.Email); err != nil {
-			return err
-		}
-	}
-
-	//TODO(mac): eventually I'll have to validate addresses as well
-	if err := validateAddress(vsr.BillingAddress); err != nil {
-		return err
-	}
-
-	if !addressIsEmpty(vsr.ShippingAddress) {
-		if err := validateAddress(vsr.ShippingAddress); err != nil {
-			return err
-		}
-	}
-
-	return nil
-
-}
-
-//validateSignUpRequest is an internal function that is used to verify only the required data in a sign up
-//request. For example a billing address is required a shipping address is not.
-func validateSignUpRequest(sur *SignUpRequest) error {
-
-	//validate buyer name
-	if err := validateFullName(sur.FirstName, sur.LastName); err != nil {
-		return err
-	}
-
-	//validate password
-	if err := validatePassword(sur.Password); err != nil {
-		return err
-	}
-
-	//validate email
-	//TODO(mac): for production I'll have to figure out how to send email validations with links
-	//etc.
-	if err := validateEmail(sur.Email); err != nil {
-		return err
-	}
-
-	//TODO(mac): eventually I'll have to validate addresses as well
-	if err := validateAddress(sur.BillingAddress); err != nil {
-		return err
-	}
-
-	if !addressIsEmpty(sur.ShippingAddress) {
-		if err := validateAddress(sur.ShippingAddress); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func checkMinPasswordPolicy(pw string) bool {
 	return len(pw) >= minPasswordLen
 }
@@ -138,7 +69,7 @@ func checkMaxPasswordPolicy(pw string) bool {
 	return len(pw) <= maxPasswordLen
 }
 
-func addressIsEmpty(a *Address) bool {
+func AddressIsEmpty(a *Address) bool {
 	if a == nil {
 		return true
 	}
@@ -153,9 +84,7 @@ func addressIsEmpty(a *Address) bool {
 	return false
 }
 
-//for now the billing address fields just cannot be empty.
-//TODO(mac): research adress validator services and use them here
-func validateAddress(a *Address) error {
+func CheckAddress(a *Address) error {
 	if a == nil {
 		return errs.New("no address was submitted")
 	}
@@ -173,7 +102,7 @@ func validateAddress(a *Address) error {
 	return nil
 }
 
-func validateEmail(email string) error {
+func CheckEmail(email string) error {
 	if emailRegex.MatchString(email) {
 		return nil
 	}
@@ -181,7 +110,7 @@ func validateEmail(email string) error {
 	return errs.New("%s is not a valid email address", email)
 }
 
-func validatePassword(pw string) error {
+func CheckPassword(pw string) error {
 	for _, p := range passwordPolicies {
 		if !p.validate(pw) {
 			return errs.New(p.description)
@@ -190,19 +119,19 @@ func validatePassword(pw string) error {
 	return nil
 }
 
-func validateFullName(first_name, last_name string) error {
-	if err := validateName(first_name); err != nil {
+func CheckFullName(first_name, last_name string) error {
+	if err := checkName(first_name); err != nil {
 		return err
 	}
 
-	if err := validateName(last_name); err != nil {
+	if err := checkName(last_name); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func validateName(name string) error {
+func checkName(name string) error {
 	switch {
 	case name == "":
 		return errs.New("name must not be empty")

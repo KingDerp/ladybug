@@ -4,12 +4,17 @@ import (
 	"context"
 
 	uuid "github.com/satori/go.uuid"
+	"github.com/zeebo/errs"
 
 	"ladybug/database"
+	"ladybug/validate"
 )
 
-//NOTE: Executive contacts have full access to a vendor's portal. there are presently no agent roles
-//set up
+const (
+	maxExecutiveContacts = 12
+)
+
+//NOTE: Executive contacts have full access to a vendor's portal. there are presently no roles set up
 type ExecutiveContact struct {
 	FirstName   string `json:"firstName"`
 	LastName    string `json:"lastName"`
@@ -20,11 +25,10 @@ type ExecutiveContact struct {
 	Password    string `json:"password"`
 }
 
-//TODO(mac): I should look for the form of a Fein and validate it.
 type VendorSignUpRequest struct {
 	Fein              string              `json:"fein"`
-	BillingAddress    *Address            `json:"billingAddress"`
-	ShippingAddress   *Address            `json"shippingAddress"`
+	BillingAddress    *validate.Address   `json:"billingAddress"`
+	ShippingAddress   *validate.Address   `json"shippingAddress"`
 	ExecutiveContacts []*ExecutiveContact `json"executiveContact"`
 }
 
@@ -36,15 +40,15 @@ type VendorSignUpResponse struct {
 func (v *VendorServer) VendorSignUp(ctx context.Context, req *VendorSignUpRequest) (
 	resp *VendorSignUpResponse, err error) {
 
-	err = validateVendorSignUpRequest(req)
+	err = ValidateVendorSignUpRequest(req)
 	if err != nil {
 		return nil, err
 	}
 
-	ship_addr_is_empty := addressIsEmpty(req.ShippingAddress)
+	ship_addr_is_empty := validate.AddressIsEmpty(req.ShippingAddress)
 
 	if !ship_addr_is_empty {
-		if err := validateAddress(req.ShippingAddress); err != nil {
+		if err := validate.CheckAddress(req.ShippingAddress); err != nil {
 			return nil, err
 		}
 	}
@@ -138,4 +142,40 @@ func (v *VendorServer) VendorSignUp(ctx context.Context, req *VendorSignUpReques
 	}
 
 	return &VendorSignUpResponse{Session: vendor_session, VendorId: vendor_id}, nil
+}
+
+//ValidateVendorSignUpRequest verifies the required data for regisering as a vendor. returns an
+//error is there is a problem or incoming data does not match the requirement
+func ValidateVendorSignUpRequest(vsr *VendorSignUpRequest) error {
+
+	if len(vsr.ExecutiveContacts) > maxExecutiveContacts {
+		return errs.New("only a max of %d contacts are allowed", maxExecutiveContacts)
+	}
+
+	for _, e := range vsr.ExecutiveContacts {
+		if err := validate.CheckFullName(e.FirstName, e.LastName); err != nil {
+			return err
+		}
+
+		if err := validate.CheckPassword(e.Password); err != nil {
+			return err
+		}
+
+		if err := validate.CheckEmail(e.Email); err != nil {
+			return err
+		}
+	}
+
+	if err := validate.CheckAddress(vsr.BillingAddress); err != nil {
+		return err
+	}
+
+	if !validate.AddressIsEmpty(vsr.ShippingAddress) {
+		if err := validate.CheckAddress(vsr.ShippingAddress); err != nil {
+			return err
+		}
+	}
+
+	return nil
+
 }

@@ -9,15 +9,16 @@ import (
 	"github.com/zeebo/errs"
 
 	"ladybug/database"
+	"ladybug/validate"
 )
 
 type SignUpRequest struct {
-	FirstName       string   `json:"firstName"`
-	LastName        string   `json:"lastName"`
-	Password        string   `json:"password"`
-	Email           string   `json:"email"`
-	BillingAddress  *Address `json:"billingAddress"`
-	ShippingAddress *Address `json"shippingAddress"`
+	FirstName       string            `json:"firstName"`
+	LastName        string            `json:"lastName"`
+	Password        string            `json:"password"`
+	Email           string            `json:"email"`
+	BillingAddress  *validate.Address `json:"billingAddress"`
+	ShippingAddress *validate.Address `json"shippingAddress"`
 }
 
 type SignUpResponse struct {
@@ -27,7 +28,7 @@ type SignUpResponse struct {
 func (u *BuyerServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *SignUpResponse,
 	err error) {
 
-	err = validateSignUpRequest(req)
+	err = ValidateBuyerSignUpRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,7 @@ func (u *BuyerServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *Sig
 			database.Address_IsBilling(true),
 			database.Address_Id(uuid.NewV4().String()))
 
-		if !addressIsEmpty(req.ShippingAddress) {
+		if !validate.AddressIsEmpty(req.ShippingAddress) {
 			err = tx.CreateNoReturn_Address(ctx, database.Address_BuyerPk(buyer.Pk),
 				database.Address_StreetAddress(req.ShippingAddress.StreetAddress),
 				database.Address_City(req.ShippingAddress.City),
@@ -88,4 +89,35 @@ func (u *BuyerServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *Sig
 	}
 
 	return &SignUpResponse{Session: session}, nil
+}
+
+//ValidateBuyerSignUpRequest is an internal function that is used to verify only the required data in a sign up
+//request. For example a billing address is required a shipping address is not.
+func ValidateBuyerSignUpRequest(sur *SignUpRequest) error {
+
+	//validate buyer name
+	if err := validate.CheckFullName(sur.FirstName, sur.LastName); err != nil {
+		return err
+	}
+
+	//validate password
+	if err := validate.CheckPassword(sur.Password); err != nil {
+		return err
+	}
+
+	if err := validate.CheckEmail(sur.Email); err != nil {
+		return err
+	}
+
+	if err := validate.CheckAddress(sur.BillingAddress); err != nil {
+		return err
+	}
+
+	if !validate.AddressIsEmpty(sur.ShippingAddress) {
+		if err := validate.CheckAddress(sur.ShippingAddress); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
