@@ -1,0 +1,6 @@
+Import packages should be listed in blocks in the following order:
+1) standard library
+2) third pary libraries
+3) ladybug libraries
+
+lines of code should not exceed a 100 character limit. After 100 characters lines should wrap

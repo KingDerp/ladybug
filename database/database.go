@@ -27,8 +27,6 @@ func (db *DB) WithTx(ctx context.Context,
 	return fn(ctx, tx)
 }
 
-//TODO(mac): check with andrew about what kind of behavior we should expect here if the cast doesn't
-//work correctly
 func IsConstraintViolationError(err error) bool {
 	if e, ok := err.(*Error); ok {
 		return e.Code == ErrorCode_ConstraintViolation

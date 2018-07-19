@@ -2,12 +2,10 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"ladybug/database"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/zeebo/errs"
-	"gopkg.in/spacemonkeygo/dbx.v1/prettyprint"
 )
 
 type VendorServer struct {
@@ -75,8 +73,6 @@ type GetVendorMessageResponse struct {
 func (v *VendorServer) GetVendorMessages(ctx context.Context, req *GetVendorMessageRequest) (
 	resp *GetVendorMessageResponse, err error) {
 
-	fmt.Printf("req.VendorPk: %d\n", req.VendorPk)
-
 	message_response := &GetVendorMessageResponse{}
 	err = v.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 
@@ -84,8 +80,6 @@ func (v *VendorServer) GetVendorMessages(ctx context.Context, req *GetVendorMess
 		if err != nil {
 			return err
 		}
-		fmt.Println("all vendor messages from db")
-		prettyprint.Println(messages)
 		message_response.Messages = MessagesFromDB(messages)
 
 		return nil
@@ -124,7 +118,7 @@ func (v *VendorServer) PostVendorMessage(ctx context.Context, req *PostVendorMes
 
 		message, err = tx.Create_Message(ctx,
 			database.Message_VendorPk(req.VendorPk),
-			database.Message_UserPk(parent_message.UserPk),
+			database.Message_BuyerPk(parent_message.BuyerPk),
 			database.Message_Id(uuid.NewV4().String()),
 			database.Message_BuyerSent(false),
 			database.Message_Message(req.Message),

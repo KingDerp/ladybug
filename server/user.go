@@ -15,27 +15,27 @@ const (
 	productRequestLimit = 10
 )
 
-type UserServer struct {
+type BuyerServer struct {
 	db *database.DB
 }
 
-func NewUserServer(db *database.DB) *UserServer {
-	return &UserServer{db: db}
+func NewBuyerServer(db *database.DB) *BuyerServer {
+	return &BuyerServer{db: db}
 }
 
-type GetUserRequest struct {
-	UserPk int64
+type GetBuyerRequest struct {
+	BuyerPk int64
 }
 
-type GetUserResponse struct {
-	User *User
+type GetBuyerResponse struct {
+	Buyer *Buyer
 }
 
 type Email struct {
 	Address string
 }
 
-type User struct {
+type Buyer struct {
 	FullName  string   `json:"fullName"`
 	FirstName string   `jsons:"firstName"`
 	LastName  string   `jsons:"lastName"`
@@ -57,29 +57,29 @@ func EmailsFromDB(emails []*database.Email) []*Email {
 
 }
 
-func UserFromDB(user *database.User, emails []*database.Email) *User {
-	return &User{
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
+func BuyerFromDB(buyer *database.Buyer, emails []*database.Email) *Buyer {
+	return &Buyer{
+		FirstName: buyer.FirstName,
+		LastName:  buyer.LastName,
 		Emails:    EmailsFromDB(emails),
 	}
 }
 
-func (u *UserServer) GetUser(ctx context.Context, req *GetUserRequest) (
-	resp *GetUserResponse, err error) {
+func (u *BuyerServer) GetBuyer(ctx context.Context, req *GetBuyerRequest) (
+	resp *GetBuyerResponse, err error) {
 
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
-		user, err := tx.Get_User_By_Pk(ctx, database.User_Pk(req.UserPk))
+		buyer, err := tx.Get_Buyer_By_Pk(ctx, database.Buyer_Pk(req.BuyerPk))
 		if err != nil {
 			return err
 		}
 
-		emails, err := tx.All_Email_By_UserPk(ctx, database.Email_UserPk(req.UserPk))
+		emails, err := tx.All_Email_By_BuyerPk(ctx, database.Email_BuyerPk(req.BuyerPk))
 		if err != nil {
 			return err
 		}
 
-		resp = &GetUserResponse{User: UserFromDB(user, emails)}
+		resp = &GetBuyerResponse{Buyer: BuyerFromDB(buyer, emails)}
 		return nil
 	})
 	if err != nil {
@@ -89,7 +89,7 @@ func (u *UserServer) GetUser(ctx context.Context, req *GetUserRequest) (
 	return resp, nil
 }
 
-type UpdateUserRequest struct {
+type UpdateBuyerRequest struct {
 	FirstName       string `json:"firstName"`
 	LastName        string `json:"lastName"`
 	Email           string `json:"email"`
@@ -97,14 +97,14 @@ type UpdateUserRequest struct {
 	NewPassword     string `json:"password"`
 }
 
-type UpdateUserResponse struct {
+type UpdateBuyerResponse struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
 }
 
-func (u *UserServer) UpdateUser(ctx context.Context, req *UpdateUserRequest) (
-	resp *UpdateUserResponse, err error) {
+func (u *BuyerServer) UpdateBuyer(ctx context.Context, req *UpdateBuyerRequest) (
+	resp *UpdateBuyerResponse, err error) {
 
 	//TODO(mac): at what layer do I validate that these fields are not blank
 	var email *database.Email
@@ -129,9 +129,9 @@ func (u *UserServer) UpdateUser(ctx context.Context, req *UpdateUserRequest) (
 		return nil, err
 	}
 
-	user_updates := database.User_Update_Fields{
-		FirstName: database.User_FirstName(req.FirstName),
-		LastName:  database.User_LastName(req.LastName),
+	buyer_updates := database.Buyer_Update_Fields{
+		FirstName: database.Buyer_FirstName(req.FirstName),
+		LastName:  database.Buyer_LastName(req.LastName),
 	}
 
 	email_updates := database.Email_Update_Fields{
@@ -139,9 +139,9 @@ func (u *UserServer) UpdateUser(ctx context.Context, req *UpdateUserRequest) (
 		SaltedHash: database.Email_SaltedHash(hash),
 	}
 
-	var user *database.User
+	var buyer *database.Buyer
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
-		user, err = tx.Update_User_By_Pk(ctx, database.User_Pk(email.UserPk), user_updates)
+		buyer, err = tx.Update_Buyer_By_Pk(ctx, database.Buyer_Pk(email.BuyerPk), buyer_updates)
 		if err != nil {
 			return err
 		}
@@ -157,9 +157,9 @@ func (u *UserServer) UpdateUser(ctx context.Context, req *UpdateUserRequest) (
 		return nil, err
 	}
 
-	return &UpdateUserResponse{
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
+	return &UpdateBuyerResponse{
+		FirstName: buyer.FirstName,
+		LastName:  buyer.LastName,
 		Email:     email.Address,
 	}, nil
 }
@@ -169,9 +169,7 @@ type LogInRequest struct {
 	Email    string `json:"email"`
 }
 
-//TODO(mac): how can I check for the type of errors that this func returns so I'm not returning
-//erros that might give more information about my server than I want.
-func (u *UserServer) LogIn(ctx context.Context, req *LogInRequest) (resp *database.Session,
+func (u *BuyerServer) LogIn(ctx context.Context, req *LogInRequest) (resp *database.Session,
 	err error) {
 
 	var email *database.Email
@@ -199,7 +197,7 @@ func (u *UserServer) LogIn(ctx context.Context, req *LogInRequest) (resp *databa
 	var session *database.Session
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 
-		session, err = tx.Create_Session(ctx, database.Session_UserPk(email.UserPk),
+		session, err = tx.Create_Session(ctx, database.Session_BuyerPk(email.BuyerPk),
 			database.Session_Id(uuid.NewV4().String()))
 		if err != nil {
 			return err
@@ -254,7 +252,7 @@ func ProductsFromDB(db_products []*database.Product) []*serverProduct {
 }
 
 //TODO(mac): this endpoint needs to be paginated
-func (u *UserServer) UserProducts(ctx context.Context, req *ProductRequest) (
+func (u *BuyerServer) BuyerProducts(ctx context.Context, req *ProductRequest) (
 	resp *ProductResponse, err error) {
 
 	//TODO(mac): eventually we need to use the request to search for products by category
@@ -277,11 +275,11 @@ func (u *UserServer) UserProducts(ctx context.Context, req *ProductRequest) (
 	return product_response, nil
 }
 
-type GetMessageRequest struct {
-	UserPk int64
+type GetBuyerMessageRequest struct {
+	BuyerPk int64
 }
 
-type GetMessagesResponse struct {
+type GetBuyerMessagesResponse struct {
 	Messages []*serverMessage
 }
 
@@ -301,14 +299,14 @@ func MessagesFromDB(db_messages []*database.Message) []*serverMessage {
 	return server_messages
 }
 
-func (u *UserServer) GetUserMessages(ctx context.Context, req *GetMessageRequest) (
-	resp *GetMessagesResponse, err error) {
+func (u *BuyerServer) GetBuyerMessages(ctx context.Context, req *GetBuyerMessageRequest) (
+	resp *GetBuyerMessagesResponse, err error) {
 
-	message_response := &GetMessagesResponse{}
+	message_response := &GetBuyerMessagesResponse{}
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 
-		messages, err := tx.All_Message_By_UserPk(ctx,
-			database.Message_UserPk(req.UserPk))
+		messages, err := tx.All_Message_By_BuyerPk(ctx,
+			database.Message_BuyerPk(req.BuyerPk))
 		if err != nil {
 			return err
 		}
@@ -324,13 +322,13 @@ func (u *UserServer) GetUserMessages(ctx context.Context, req *GetMessageRequest
 	return message_response, nil
 }
 
-type PostUserMessageRequest struct {
-	UserPk   int64  `json:"-"`
+type PostBuyerMessageRequest struct {
+	BuyerPk  int64  `json:"-"`
 	VendorId string `json:"vendorId"`
 	Message  string `json:"message"`
 }
 
-type PostUserMessageResponse struct {
+type PostBuyerMessageResponse struct {
 	Message *serverMessage `json:"message"`
 }
 
@@ -343,8 +341,8 @@ func MessageFromDB(db_message *database.Message) *serverMessage {
 	}
 }
 
-func (u *UserServer) PostUserMessage(ctx context.Context, req *PostUserMessageRequest) (
-	resp *PostUserMessageResponse, err error) {
+func (u *BuyerServer) PostBuyerMessage(ctx context.Context, req *PostBuyerMessageRequest) (
+	resp *PostBuyerMessageResponse, err error) {
 
 	var message *database.Message
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
@@ -357,7 +355,7 @@ func (u *UserServer) PostUserMessage(ctx context.Context, req *PostUserMessageRe
 
 		message, err = tx.Create_Message(ctx,
 			database.Message_VendorPk(pk_row.Pk),
-			database.Message_UserPk(req.UserPk),
+			database.Message_BuyerPk(req.BuyerPk),
 			database.Message_Id(uuid.NewV4().String()),
 			database.Message_BuyerSent(true),
 			database.Message_Message(req.Message),
@@ -373,7 +371,7 @@ func (u *UserServer) PostUserMessage(ctx context.Context, req *PostUserMessageRe
 		return nil, err
 	}
 
-	return &PostUserMessageResponse{Message: MessageFromDB(message)}, nil
+	return &PostBuyerMessageResponse{Message: MessageFromDB(message)}, nil
 }
 
 //HashPassword takes a string, creates a hash using that string and returns the hash in a string

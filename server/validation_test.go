@@ -99,12 +99,12 @@ func TestValidatePassword(t *testing.T) {
 
 		if tt.expected == nil {
 			require.Equal(t, actual, tt.expected,
-				fmt.Sprintf("validateUserPassword(%s): expected %#v, actual %#v",
+				fmt.Sprintf("validateBuyerPassword(%s): expected %#v, actual %#v",
 					tt.input, tt.expected, actual),
 			)
 		} else {
 			require.EqualError(t, actual, tt.expected.Error(),
-				fmt.Sprintf("validateUserPassword(%s): expected %t, actual %t",
+				fmt.Sprintf("validateBuyerPassword(%s): expected %t, actual %t",
 					tt.input, tt.expected, actual),
 			)
 		}

@@ -99,7 +99,7 @@ func validateVendorSignUpRequest(vsr *VendorSignUpRequest) error {
 //request. For example a billing address is required a shipping address is not.
 func validateSignUpRequest(sur *SignUpRequest) error {
 
-	//validate user name
+	//validate buyer name
 	if err := validateFullName(sur.FirstName, sur.LastName); err != nil {
 		return err
 	}

@@ -2,15 +2,14 @@ package server
 
 import (
 	"context"
-	"ladybug/database"
 	"strings"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/zeebo/errs"
-)
 
-//TODO(mac): user should really be renamed to buyer for clarity
+	"ladybug/database"
+)
 
 type SignUpRequest struct {
 	FirstName       string   `json:"firstName"`
@@ -25,7 +24,7 @@ type SignUpResponse struct {
 	Session *database.Session
 }
 
-func (u *UserServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *SignUpResponse,
+func (u *BuyerServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *SignUpResponse,
 	err error) {
 
 	err = validateSignUpRequest(req)
@@ -41,13 +40,13 @@ func (u *UserServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *Sign
 	var session *database.Session
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 
-		user, err := tx.Create_User(ctx, database.User_Id(uuid.NewV4().String()),
-			database.User_FirstName(req.FirstName), database.User_LastName(req.LastName))
+		buyer, err := tx.Create_Buyer(ctx, database.Buyer_Id(uuid.NewV4().String()),
+			database.Buyer_FirstName(req.FirstName), database.Buyer_LastName(req.LastName))
 		if err != nil {
 			return err
 		}
 
-		err = tx.CreateNoReturn_Email(ctx, database.Email_UserPk(user.Pk),
+		err = tx.CreateNoReturn_Email(ctx, database.Email_BuyerPk(buyer.Pk),
 			database.Email_Address(strings.ToLower(req.Email)), database.Email_SaltedHash(hash),
 			database.Email_Id(uuid.NewV4().String()))
 		if database.IsConstraintViolationError(err) {
@@ -58,7 +57,7 @@ func (u *UserServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *Sign
 			return err
 		}
 
-		err = tx.CreateNoReturn_Address(ctx, database.Address_UserPk(user.Pk),
+		err = tx.CreateNoReturn_Address(ctx, database.Address_BuyerPk(buyer.Pk),
 			database.Address_StreetAddress(req.BillingAddress.StreetAddress),
 			database.Address_City(req.BillingAddress.City),
 			database.Address_State(req.BillingAddress.State),
@@ -67,7 +66,7 @@ func (u *UserServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *Sign
 			database.Address_Id(uuid.NewV4().String()))
 
 		if !addressIsEmpty(req.ShippingAddress) {
-			err = tx.CreateNoReturn_Address(ctx, database.Address_UserPk(user.Pk),
+			err = tx.CreateNoReturn_Address(ctx, database.Address_BuyerPk(buyer.Pk),
 				database.Address_StreetAddress(req.ShippingAddress.StreetAddress),
 				database.Address_City(req.ShippingAddress.City),
 				database.Address_State(req.ShippingAddress.State),
@@ -76,7 +75,7 @@ func (u *UserServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *Sign
 				database.Address_Id(uuid.NewV4().String()))
 		}
 
-		session, err = tx.Create_Session(ctx, database.Session_UserPk(user.Pk),
+		session, err = tx.Create_Session(ctx, database.Session_BuyerPk(buyer.Pk),
 			database.Session_Id(uuid.NewV4().String()))
 		if err != nil {
 			return err

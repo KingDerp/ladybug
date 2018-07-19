@@ -1,5 +1,5 @@
 // -------------------------------------------------------------- //
-model user (
+model buyer (
 	key    pk
 	unique id
 
@@ -11,21 +11,21 @@ model user (
 	field last_name  text ( updatable )
 )
 
-create user()
+create buyer()
 
-create user( noreturn )
+create buyer( noreturn )
 
 read one ( 
-    select user 
-    where user.pk = ? 
+    select buyer 
+    where buyer.pk = ? 
 )
 
 read one (
-    select user.pk
-    where user.id = ?
+    select buyer.pk
+    where buyer.id = ?
 )
 
-update user ( where user.pk = ? )
+update buyer ( where buyer.pk = ? )
 
 
 // -------------------------------------------------------------- //
@@ -35,7 +35,7 @@ model email (
     unique address
 
 	field pk          serial64
-    field user_pk     int64
+    field buyer_pk     int64
 	field created_at  timestamp ( autoinsert )
     field address     text ( updatable )
     field salted_hash text ( updatable )
@@ -48,7 +48,7 @@ create email ( noreturn )
 
 read all (
     select email
-    where email.user_pk = ?
+    where email.buyer_pk = ?
 )
 
 read one (
@@ -69,7 +69,7 @@ model address (
 	unique id
 
 	field pk             serial64
-    field user_pk        int64
+    field buyer_pk        int64
 	field created_at     timestamp ( autoinsert )
     field street_address text ( updatable )
     field city           text ( updatable )
@@ -85,7 +85,7 @@ create address ( noreturn )
 
 read all (
     select address
-    where address.user_pk = ?
+    where address.buyer_pk = ?
 )
 
 update address ( where address.pk = ? )
@@ -98,7 +98,7 @@ model session (
 	unique id
 
     field pk          serial64
-    field user_pk     int64
+    field buyer_pk     int64
     field id          text
 	field created_at  timestamp ( autoinsert )
 )
@@ -108,7 +108,7 @@ create session()
 create session( noreturn )
 
 read one (
-    select session.user_pk
+    select session.buyer_pk
     where session.id = ?
 )
 
@@ -251,7 +251,7 @@ model trial_product (
     field pk serial64
     field id             text
     field vendor_pk      int64
-    field user_pk        int64
+    field buyer_pk        int64
     field product_pk     int64
     field created_at     timestamp ( autoinsert )
     field trial_price    float
@@ -266,7 +266,7 @@ model purchased_product (
     field pk             serial64
     field id             text
     field vendor_pk      int64
-    field user_pk        int64
+    field buyer_pk        int64
     field product_pk     int64
     field purchase_price float
     field created_at     timestamp ( autoinsert )
@@ -304,7 +304,7 @@ model message (
 
     field pk         serial64
     field vendor_pk  int64
-    field user_pk    int64
+    field buyer_pk    int64
     field id         text
     field created_at timestamp ( autoinsert )
     field buyer_sent bool
@@ -318,7 +318,7 @@ create message( noreturn )
 
 read all (
     select message
-    where message.user_pk = ?
+    where message.buyer_pk = ?
 )
 
 read all (

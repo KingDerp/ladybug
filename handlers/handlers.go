@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"ladybug/database"
@@ -12,15 +11,11 @@ type Handler struct {
 	http.Handler
 }
 
-type authMiddleware struct {
-	db *database.DB
-}
-
 func NewHandler(db *database.DB) *Handler {
 
 	a := &authMiddleware{db: db}
-	us := server.NewUserServer(db)
-	u := newUserHandler(us)
+	us := server.NewBuyerServer(db)
+	u := newBuyerHandler(us)
 
 	vs := server.NewVendorServer(db)
 	v := newVendorHandler(vs)
@@ -29,13 +24,12 @@ func NewHandler(db *database.DB) *Handler {
 
 	//TODO(mac): I'd like to be able to specify the route method and narrow it down to a function
 	//call that handles that verb
-	//user endpoints
-	mux.Handle("/", a.CheckUserSessionCookie(http.HandlerFunc(rootHandler)))
-	mux.Handle("/user/login", http.HandlerFunc(u.userLogInHandler))
-	mux.Handle("/user/sign-up", http.HandlerFunc(u.userSignUpHandler))
-	mux.Handle("/user", a.CheckUserSessionCookie(http.HandlerFunc(u.userHandler)))
-	mux.Handle("/products", http.HandlerFunc(u.userProducts))
-	mux.Handle("/user/messages", a.CheckUserSessionCookie(http.HandlerFunc(u.sendMessage)))
+	//buyer endpoints
+	mux.Handle("/buyer/login", http.HandlerFunc(u.buyerLogin))
+	mux.Handle("/buyer/sign-up", http.HandlerFunc(u.buyerSignUp))
+	mux.Handle("/buyer", a.CheckBuyerSessionCookie(http.HandlerFunc(u.buyer)))
+	mux.Handle("/products", http.HandlerFunc(u.buyerProducts))
+	mux.Handle("/buyer/messages", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
 
 	//vendor endpoints
 	mux.Handle("/vendor/sign-up", http.HandlerFunc(v.vendorSignUpHandler))
@@ -45,50 +39,4 @@ func NewHandler(db *database.DB) *Handler {
 		http.HandlerFunc(v.vendorMessageHandler)))
 
 	return &Handler{Handler: mux}
-}
-
-func (a *authMiddleware) CheckUserSessionCookie(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-
-		cookie, err := req.Cookie("session")
-		if err != nil {
-			http.Error(w, fmt.Sprint(err), http.StatusUnauthorized)
-			return
-		}
-
-		pk_row, err := a.db.Get_Session_UserPk_By_Id(req.Context(),
-			database.Session_Id(cookie.Value))
-		if err != nil {
-			http.Error(w, fmt.Sprint(err), http.StatusUnauthorized)
-			return
-		}
-
-		c := req.Context()
-		req = req.WithContext(WithUserPk(c, pk_row.UserPk))
-
-		handler.ServeHTTP(w, req)
-	})
-}
-
-func (a *authMiddleware) CheckVendorSessionCookie(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-
-		cookie, err := req.Cookie("session")
-		if err != nil {
-			http.Error(w, fmt.Sprint(err), http.StatusUnauthorized)
-			return
-		}
-
-		pk_row, err := a.db.Get_VendorSession_VendorPk_By_Id(req.Context(),
-			database.VendorSession_Id(cookie.Value))
-		if err != nil {
-			http.Error(w, fmt.Sprint(err), http.StatusUnauthorized)
-			return
-		}
-
-		c := req.Context()
-		req = req.WithContext(WithUserPk(c, pk_row.VendorPk))
-
-		handler.ServeHTTP(w, req)
-	})
 }

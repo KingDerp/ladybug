@@ -2,7 +2,7 @@
 -- DO NOT EDIT
 CREATE TABLE addresses (
 	pk bigserial NOT NULL,
-	user_pk bigint NOT NULL,
+	buyer_pk bigint NOT NULL,
 	created_at timestamp with time zone NOT NULL,
 	street_address text NOT NULL,
 	city text NOT NULL,
@@ -13,9 +13,19 @@ CREATE TABLE addresses (
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
 );
+CREATE TABLE buyers (
+	pk bigserial NOT NULL,
+	created_at timestamp with time zone NOT NULL,
+	updated_at timestamp with time zone NOT NULL,
+	id text NOT NULL,
+	first_name text NOT NULL,
+	last_name text NOT NULL,
+	PRIMARY KEY ( pk ),
+	UNIQUE ( id )
+);
 CREATE TABLE emails (
 	pk bigserial NOT NULL,
-	user_pk bigint NOT NULL,
+	buyer_pk bigint NOT NULL,
 	created_at timestamp with time zone NOT NULL,
 	address text NOT NULL,
 	salted_hash text NOT NULL,
@@ -37,7 +47,7 @@ CREATE TABLE executive_contacts (
 CREATE TABLE messages (
 	pk bigserial NOT NULL,
 	vendor_pk bigint NOT NULL,
-	user_pk bigint NOT NULL,
+	buyer_pk bigint NOT NULL,
 	id text NOT NULL,
 	created_at timestamp with time zone NOT NULL,
 	buyer_sent boolean NOT NULL,
@@ -67,7 +77,7 @@ CREATE TABLE purchased_products (
 	pk bigserial NOT NULL,
 	id text NOT NULL,
 	vendor_pk bigint NOT NULL,
-	user_pk bigint NOT NULL,
+	buyer_pk bigint NOT NULL,
 	product_pk bigint NOT NULL,
 	purchase_price real NOT NULL,
 	created_at timestamp with time zone NOT NULL,
@@ -76,7 +86,7 @@ CREATE TABLE purchased_products (
 );
 CREATE TABLE sessions (
 	pk bigserial NOT NULL,
-	user_pk bigint NOT NULL,
+	buyer_pk bigint NOT NULL,
 	id text NOT NULL,
 	created_at timestamp with time zone NOT NULL,
 	PRIMARY KEY ( pk ),
@@ -86,21 +96,11 @@ CREATE TABLE trial_products (
 	pk bigserial NOT NULL,
 	id text NOT NULL,
 	vendor_pk bigint NOT NULL,
-	user_pk bigint NOT NULL,
+	buyer_pk bigint NOT NULL,
 	product_pk bigint NOT NULL,
 	created_at timestamp with time zone NOT NULL,
 	trial_price real NOT NULL,
 	is_returned boolean NOT NULL,
-	PRIMARY KEY ( pk ),
-	UNIQUE ( id )
-);
-CREATE TABLE users (
-	pk bigserial NOT NULL,
-	created_at timestamp with time zone NOT NULL,
-	updated_at timestamp with time zone NOT NULL,
-	id text NOT NULL,
-	first_name text NOT NULL,
-	last_name text NOT NULL,
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
 );

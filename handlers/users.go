@@ -10,82 +10,62 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"gopkg.in/spacemonkeygo/dbx.v1/prettyprint"
 )
 
 type contextKey int
 
 const (
-	userContextKey contextKey = iota
-	userPkContextKey
+	buyerContextKey contextKey = iota
+	buyerPkContextKey
 )
 
-type userHandler struct {
-	userServer *server.UserServer
+type buyerHandler struct {
+	buyerServer *server.BuyerServer
 }
 
-func newUserHandler(server *server.UserServer) *userHandler {
-	return &userHandler{userServer: server}
+func newBuyerHandler(server *server.BuyerServer) *buyerHandler {
+	return &buyerHandler{buyerServer: server}
 }
 
-func WithUser(ctx context.Context, user *database.User) context.Context {
-	return context.WithValue(ctx, userContextKey, user)
+func WithBuyer(ctx context.Context, buyer *database.Buyer) context.Context {
+	return context.WithValue(ctx, buyerContextKey, buyer)
 }
 
-func WithUserPk(ctx context.Context, pk int64) context.Context {
-	return context.WithValue(ctx, userPkContextKey, pk)
+func WithBuyerPk(ctx context.Context, pk int64) context.Context {
+	return context.WithValue(ctx, buyerPkContextKey, pk)
 }
 
-func GetUserPk(ctx context.Context) int64 {
-	pk, _ := ctx.Value(userPkContextKey).(int64)
+func GetBuyerPk(ctx context.Context) int64 {
+	pk, _ := ctx.Value(buyerPkContextKey).(int64)
 	return pk
 }
 
-func GetUser(ctx context.Context) *database.User {
-	user, _ := ctx.Value(userContextKey).(*database.User)
-	return user
+//TODO(Mac): why don't we handle the error here? is it just a best effort? same in the func above
+func GetBuyer(ctx context.Context) *database.Buyer {
+	buyer, _ := ctx.Value(buyerContextKey).(*database.Buyer)
+	return buyer
 }
 
-func rootHandler(w http.ResponseWriter, req *http.Request) {
-	// The "/" pattern matches everything, so we need to check
-	// that we're at the root here.
-	if req.URL.Path != "/" {
-		http.NotFound(w, req)
-		return
-	}
-	user := GetUser(req.Context())
+//TODO(mac): write put for this function
+func (u *buyerHandler) buyer(w http.ResponseWriter, req *http.Request) {
 
-	b, err := json.Marshal(user)
-	if err != nil {
-		http.Error(w, "server error", http.StatusInternalServerError)
-		return
-	}
-
-	h := w.Header()
-	h.Set("Content-Type", "application/json")
-	w.Write(b)
-}
-
-func (u *userHandler) userHandler(w http.ResponseWriter, req *http.Request) {
-
-	//TODO(mac): write GET and PUT for user
-	if req.Method != "GET" || req.Method != "PUT" {
+	if req.Method != "GET" {
 		http.Error(w, "method not allowed", http.StatusBadRequest)
 		return
 	}
 
 	ctx := req.Context()
 	if req.Method == "GET" {
-		user_pk := GetUserPk(req.Context())
+		buyer_pk := GetBuyerPk(req.Context())
 
-		user_response, err := u.userServer.GetUser(ctx,
-			&server.GetUserRequest{UserPk: user_pk})
+		buyer_response, err := u.buyerServer.GetBuyer(ctx,
+			&server.GetBuyerRequest{BuyerPk: buyer_pk})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		b, err := json.Marshal(user_response)
+		b, err := json.Marshal(buyer_response)
 		if err != nil {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
@@ -96,15 +76,9 @@ func (u *userHandler) userHandler(w http.ResponseWriter, req *http.Request) {
 		w.Write(b)
 
 	}
-
-	if req.Method == "PUT" {
-		//user := GetUser(req.Context())
-
-		//u.UserServer.Update
-	}
 }
 
-func (u *userHandler) userSignUpHandler(w http.ResponseWriter, req *http.Request) {
+func (u *buyerHandler) buyerSignUp(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 
@@ -121,20 +95,20 @@ func (u *userHandler) userSignUpHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	sign_up_resp, err := u.userServer.SignUp(ctx, &sign_up_req)
+	sign_up_resp, err := u.buyerServer.SignUp(ctx, &sign_up_req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logrus.Errorf("%+v", err)
 		return
 	}
 
-	prettyprint.Println(sign_up_resp)
-	//TODO(mac) write a policy to determine how long until cookie expires
+	//TODO(mac) write a policy to determine how long until cookie expires. I'd prefer it if the
+	//cookie was valid as long as the browser was open
 	http.SetCookie(w, &http.Cookie{Name: "session", Value: sign_up_resp.Session.Id,
 		Expires: sign_up_resp.Session.CreatedAt.Add(24 * time.Hour)})
 }
 
-func (u *userHandler) userLogInHandler(w http.ResponseWriter, req *http.Request) {
+func (u *buyerHandler) buyerLogin(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "POST" {
 		http.Error(w, "method not allowed", http.StatusBadRequest)
 		return
@@ -150,7 +124,7 @@ func (u *userHandler) userLogInHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	session, err := u.userServer.LogIn(ctx, &log_in_req)
+	session, err := u.buyerServer.LogIn(ctx, &log_in_req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -161,7 +135,7 @@ func (u *userHandler) userLogInHandler(w http.ResponseWriter, req *http.Request)
 }
 
 //TODO(mac): remove handler as a portion of the naming conventions it doesn't add anything of value
-func (u *userHandler) userProducts(w http.ResponseWriter, req *http.Request) {
+func (u *buyerHandler) buyerProducts(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
 		http.Error(w, "method not allowed", http.StatusBadRequest)
 		return
@@ -179,7 +153,7 @@ func (u *userHandler) userProducts(w http.ResponseWriter, req *http.Request) {
 		ProductCategories: categories,
 	}
 
-	products, err := u.userServer.UserProducts(ctx, products_req)
+	products, err := u.buyerServer.BuyerProducts(ctx, products_req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -196,15 +170,15 @@ func (u *userHandler) userProducts(w http.ResponseWriter, req *http.Request) {
 	w.Write(b)
 }
 
-func (u *userHandler) sendMessage(w http.ResponseWriter, req *http.Request) {
+func (u *buyerHandler) sendBuyerMessage(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	if req.Method == "GET" {
 
-		user_pk := GetUserPk(req.Context())
+		buyer_pk := GetBuyerPk(req.Context())
 
-		messages, err := u.userServer.GetUserMessages(ctx, &server.GetMessageRequest{
-			UserPk: user_pk})
+		messages, err := u.buyerServer.GetBuyerMessages(ctx, &server.GetBuyerMessageRequest{
+			BuyerPk: buyer_pk})
 		if err != nil {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
@@ -223,19 +197,19 @@ func (u *userHandler) sendMessage(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if req.Method == "POST" {
-		user_pk := GetUserPk(req.Context())
 
 		decoder := json.NewDecoder(req.Body)
-		var message_req server.PostUserMessageRequest
+		var message_req server.PostBuyerMessageRequest
 		err := decoder.Decode(&message_req)
 		if err != nil {
 			http.Error(w, "unable to parse json", http.StatusInternalServerError)
 			return
 		}
 
-		message_req.UserPk = user_pk
+		buyer_pk := GetBuyerPk(ctx)
+		message_req.BuyerPk = buyer_pk
 
-		message_resp, err := u.userServer.PostUserMessage(ctx, &message_req)
+		message_resp, err := u.buyerServer.PostBuyerMessage(ctx, &message_req)
 		if err != nil {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return

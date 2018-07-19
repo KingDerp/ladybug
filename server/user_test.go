@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidateUserIncompleteBillingAddress(t *testing.T) {
+func TestValidateBuyerIncompleteBillingAddress(t *testing.T) {
 	sur := &SignUpRequest{
 		FirstName: "Joey",
 		LastName:  "Fatone",
