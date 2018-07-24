@@ -32,11 +32,9 @@ func NewHandler(db *database.DB) *Handler {
 	mux.Handle("/buyer/messages", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
 
 	//vendor endpoints
-	mux.Handle("/vendor/sign-up", http.HandlerFunc(v.vendorSignUpHandler))
-	mux.Handle("/vendor/product", a.CheckVendorSessionCookie(
-		http.HandlerFunc(v.vendorProductHandler)))
-	mux.Handle("/vendor/messages", a.CheckVendorSessionCookie(
-		http.HandlerFunc(v.vendorMessageHandler)))
+	mux.Handle("/vendor/sign-up", http.HandlerFunc(v.vendorSignUp))
+	mux.Handle("/vendor/product", a.CheckVendorSessionCookie(http.HandlerFunc(v.vendorProduct)))
+	mux.Handle("/vendor/messages", a.CheckVendorSessionCookie(http.HandlerFunc(v.vendorMessage)))
 
 	return &Handler{Handler: mux}
 }

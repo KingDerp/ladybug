@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
 	uuid "github.com/satori/go.uuid"
@@ -114,6 +115,10 @@ func ValidateBuyerSignUpRequest(sur *SignUpRequest) error {
 	}
 
 	if !validate.AddressIsEmpty(sur.ShippingAddress) {
+		if reflect.DeepEqual(sur.ShippingAddress, sur.BillingAddress) {
+			return errs.New("shipping address is the same as billing address")
+		}
+
 		if err := validate.CheckAddress(sur.ShippingAddress); err != nil {
 			return err
 		}

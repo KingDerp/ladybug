@@ -24,16 +24,16 @@ func TestEmailValidation(t *testing.T) {
 	}
 
 	for _, tt := range email_tests {
-		actual := validateEmail(tt.input)
+		actual := CheckEmail(tt.input)
 
 		if tt.expected == nil {
 			require.Equal(t, actual, tt.expected,
-				fmt.Sprintf("validateEmail(%s): expected %#v, actual %#v",
+				fmt.Sprintf("CheckEmail(%s): expected %#v, actual %#v",
 					tt.input, tt.expected, actual),
 			)
 		} else {
 			require.EqualError(t, actual, tt.expected.Error(),
-				fmt.Sprintf("validateEmail(%s): expected %t, actual %t",
+				fmt.Sprintf("CheckEmail(%s): expected %t, actual %t",
 					tt.input, tt.expected, actual),
 			)
 		}
@@ -56,16 +56,16 @@ func TestValidateName(t *testing.T) {
 	}
 
 	for _, tt := range name_tests {
-		actual := validateName(tt.input)
+		actual := checkName(tt.input)
 
 		if tt.expected == nil {
 			require.Equal(t, actual, tt.expected,
-				fmt.Sprintf("validateName(%s): expected %#v, actual %#v",
+				fmt.Sprintf("checkName(%s): expected %#v, actual %#v",
 					tt.input, tt.expected, actual),
 			)
 		} else {
 			require.EqualError(t, actual, tt.expected.Error(),
-				fmt.Sprintf("validateName(%s): expected %t, actual %t",
+				fmt.Sprintf("checkName(%s): expected %t, actual %t",
 					tt.input, tt.expected, actual),
 			)
 		}
@@ -81,13 +81,13 @@ func TestValidatePassword(t *testing.T) {
 		{"NO_LOWER_CASE_LETTER", errs.New("Password must contain a lower case letter")},
 		{"HAS_no_Number", errs.New("Password must contain a number")},
 		{"HAS_no_special_character_1", errs.New(fmt.Sprintf("Password must contain a special"+
-			" character which includes: %s", specialChars))},
+			" character which includes: %s", SpecialChars))},
 		{`HAS_invalid_char1}`, errs.New(fmt.Sprintf("Password must contain a special"+
-			" character which includes: %s", specialChars))},
+			" character which includes: %s", SpecialChars))},
 		{"$1Exceeds_max_count_length_of_50_characters_and_is_not_allowed",
-			errs.New(fmt.Sprintf("Password must be a maximum of %d characters", maxPasswordLen))},
+			errs.New(fmt.Sprintf("Password must be a maximum of %d characters", MaxPasswordLen))},
 		{"$1Short",
-			errs.New(fmt.Sprintf("Password must be a minimum of %d characters", minPasswordLen))},
+			errs.New(fmt.Sprintf("Password must be a minimum of %d characters", MinPasswordLen))},
 		{"ValidPassword%!3", nil},
 		{"LadybugRocks888)8", nil},
 		{"ValidPassword%!3", nil},
@@ -95,16 +95,16 @@ func TestValidatePassword(t *testing.T) {
 	}
 
 	for _, tt := range password_tests {
-		actual := validatePassword(tt.input)
+		actual := CheckPassword(tt.input)
 
 		if tt.expected == nil {
 			require.Equal(t, actual, tt.expected,
-				fmt.Sprintf("validateBuyerPassword(%s): expected %#v, actual %#v",
+				fmt.Sprintf("CheckPassword(%s): expected %#v, actual %#v",
 					tt.input, tt.expected, actual),
 			)
 		} else {
 			require.EqualError(t, actual, tt.expected.Error(),
-				fmt.Sprintf("validateBuyerPassword(%s): expected %t, actual %t",
+				fmt.Sprintf("CheckPassword(%s): expected %t, actual %t",
 					tt.input, tt.expected, actual),
 			)
 		}
@@ -112,66 +112,58 @@ func TestValidatePassword(t *testing.T) {
 }
 
 func TestValidateIncompleteAddress(t *testing.T) {
-	sur := &SignUpRequest{
-		BillingAddress: &Address{
-			StreetAddress: "",
-			City:          "Orlando",
-			State:         "FL",
-			Zip:           98074,
-		},
+	address := &Address{
+		StreetAddress: "",
+		City:          "Orlando",
+		State:         "FL",
+		Zip:           98074,
 	}
 
-	actual := validateAddress(sur.BillingAddress)
-	expected := errs.New("city, state, or street fields are blank for billing address")
+	actual := CheckAddress(address)
+	expected := errs.New("city, state, street, or zip fields are blank for billing address")
 	require.EqualError(t, actual, expected.Error())
 }
 
 func TestValidateZipCodeIsZero(t *testing.T) {
-	sur := &SignUpRequest{
-		BillingAddress: &Address{
-			StreetAddress: "florida ln",
-			City:          "Orlando",
-			State:         "FL",
-			Zip:           0,
-		},
+	address := &Address{
+		StreetAddress: "florida ln",
+		City:          "Orlando",
+		State:         "FL",
+		Zip:           0,
 	}
 
-	actual := validateAddress(sur.BillingAddress)
-	expected := errs.New("you must provide a billing zip code")
+	actual := CheckAddress(address)
+	expected := errs.New("city, state, street, or zip fields are blank for billing address")
 	require.EqualError(t, actual, expected.Error())
 }
 
 func TestValidateStreetMissing(t *testing.T) {
-	sur := &SignUpRequest{
-		BillingAddress: &Address{
-			StreetAddress: "florida ln",
-			City:          "Orlando",
-			State:         "",
-			Zip:           0,
-		},
+	address := &Address{
+		StreetAddress: "florida ln",
+		City:          "Orlando",
+		State:         "",
+		Zip:           0,
 	}
 
-	actual := validateAddress(sur.BillingAddress)
-	expected := errs.New("city, state, or street fields are blank for billing address")
+	actual := CheckAddress(address)
+	expected := errs.New("city, state, street, or zip fields are blank for billing address")
 	require.EqualError(t, actual, expected.Error())
 }
 
 func TestAddressIsEmpty(t *testing.T) {
-	sur := &SignUpRequest{}
+	address := &Address{}
 
-	actual := addressIsEmpty(sur.BillingAddress)
+	actual := AddressIsEmpty(address)
 	expected := true
 	require.Equal(t, actual, expected,
 		fmt.Sprintf("shippingAddress(sur)  actual:%t expected:%t", actual, expected))
 }
 
 func TestAddressIsNotEmpty(t *testing.T) {
-	sur := &SignUpRequest{
-		ShippingAddress: &Address{
-			StreetAddress: "not empty"},
-	}
+	address := &Address{
+		StreetAddress: "not empty"}
 
-	actual := addressIsEmpty(sur.ShippingAddress)
+	actual := AddressIsEmpty(address)
 	expected := false
 	require.Equal(t, actual, expected,
 		fmt.Sprintf("shippingAddress(sur)  actual:%t expected:%t", actual, expected))

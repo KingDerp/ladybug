@@ -88,6 +88,18 @@ read all (
     where address.buyer_pk = ?
 )
 
+read all (
+    select address
+    where address.is_billing = true
+    where address.buyer_pk = ?
+)
+
+read all (
+    select address
+    where address.is_billing = false
+    where address.buyer_pk = ?
+)
+
 update address ( where address.pk = ? )
 
 

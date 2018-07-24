@@ -40,7 +40,6 @@ func GetBuyerPk(ctx context.Context) int64 {
 	return pk
 }
 
-//TODO(Mac): why don't we handle the error here? is it just a best effort? same in the func above
 func GetBuyer(ctx context.Context) *database.Buyer {
 	buyer, _ := ctx.Value(buyerContextKey).(*database.Buyer)
 	return buyer
@@ -102,10 +101,8 @@ func (u *buyerHandler) buyerSignUp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//TODO(mac) write a policy to determine how long until cookie expires. I'd prefer it if the
-	//cookie was valid as long as the browser was open
 	http.SetCookie(w, &http.Cookie{Name: "session", Value: sign_up_resp.Session.Id,
-		Expires: sign_up_resp.Session.CreatedAt.Add(24 * time.Hour)})
+		Expires: sign_up_resp.Session.CreatedAt.Add(730 * time.Hour)})
 }
 
 func (u *buyerHandler) buyerLogin(w http.ResponseWriter, req *http.Request) {
@@ -131,10 +128,9 @@ func (u *buyerHandler) buyerLogin(w http.ResponseWriter, req *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{Name: "session", Value: session.Id,
-		Expires: session.CreatedAt.Add(24 * time.Hour)})
+		Expires: session.CreatedAt.Add(730 * time.Hour)})
 }
 
-//TODO(mac): remove handler as a portion of the naming conventions it doesn't add anything of value
 func (u *buyerHandler) buyerProducts(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
 		http.Error(w, "method not allowed", http.StatusBadRequest)

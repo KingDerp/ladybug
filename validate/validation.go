@@ -23,13 +23,17 @@ type passwordPolicy struct {
 }
 
 const (
-	minPasswordLen = 8
-	maxPasswordLen = 50
+	MinPasswordLen = 8
+	MaxPasswordLen = 50
 )
 
 var (
-	specialChars     = []rune(`~!@#$%^&*()><./,*-+;:`)
+	SpecialChars     = []rune(`~!@#$%^&*()><./,*-+;:`)
 	passwordPolicies = []passwordPolicy{
+		{
+			description: "Password must not be empty",
+			validate:    lenNotZero,
+		},
 		{
 			description: "Password must contain an upper case letter",
 			validate:    checkForRune(unicode.IsUpper),
@@ -44,15 +48,15 @@ var (
 		},
 		{
 			description: fmt.Sprintf("Password must contain a special character which includes: %s",
-				specialChars),
-			validate: checkForRune(func(r rune) bool { return runeIn(r, specialChars) }),
+				SpecialChars),
+			validate: checkForRune(func(r rune) bool { return runeIn(r, SpecialChars) }),
 		},
 		{
-			description: fmt.Sprintf("Password must be a maximum of %d characters", maxPasswordLen),
+			description: fmt.Sprintf("Password must be a maximum of %d characters", MaxPasswordLen),
 			validate:    checkMaxPasswordPolicy,
 		},
 		{
-			description: fmt.Sprintf("Password must be a minimum of %d characters", minPasswordLen),
+			description: fmt.Sprintf("Password must be a minimum of %d characters", MinPasswordLen),
 			validate:    checkMinPasswordPolicy,
 		},
 	}
@@ -62,11 +66,11 @@ var (
 )
 
 func checkMinPasswordPolicy(pw string) bool {
-	return len(pw) >= minPasswordLen
+	return len(pw) >= MinPasswordLen
 }
 
 func checkMaxPasswordPolicy(pw string) bool {
-	return len(pw) <= maxPasswordLen
+	return len(pw) <= MaxPasswordLen
 }
 
 func AddressIsEmpty(a *Address) bool {
@@ -91,18 +95,19 @@ func CheckAddress(a *Address) error {
 
 	if a.StreetAddress == "" ||
 		a.City == "" ||
-		a.State == "" {
-		return errs.New("city, state, or street fields are blank for billing address")
-	}
-
-	if a.Zip == 0 {
-		return errs.New("you must provide a billing zip code")
+		a.State == "" ||
+		a.Zip == 0 {
+		return errs.New("city, state, street, or zip fields are blank for billing address")
 	}
 
 	return nil
 }
 
 func CheckEmail(email string) error {
+	if len(email) <= 0 {
+		return errs.New("email address cannot be empty")
+	}
+
 	if emailRegex.MatchString(email) {
 		return nil
 	}
@@ -160,4 +165,8 @@ func runeIn(r rune, in []rune) bool {
 		}
 	}
 	return false
+}
+
+func lenNotZero(s string) bool {
+	return len(s) > 0
 }

@@ -106,7 +106,6 @@ type UpdateBuyerResponse struct {
 func (u *BuyerServer) UpdateBuyer(ctx context.Context, req *UpdateBuyerRequest) (
 	resp *UpdateBuyerResponse, err error) {
 
-	//TODO(mac): at what layer do I validate that these fields are not blank
 	var email *database.Email
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 		email, err = tx.Get_Email_By_Address(ctx, database.Email_Address(req.Email))

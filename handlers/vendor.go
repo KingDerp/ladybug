@@ -43,7 +43,7 @@ func GetVendor(ctx context.Context) *database.Vendor {
 	return vendor
 }
 
-func (v *vendorHandler) vendorSignUpHandler(w http.ResponseWriter, req *http.Request) {
+func (v *vendorHandler) vendorSignUp(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	if req.Method != "POST" {
@@ -67,7 +67,7 @@ func (v *vendorHandler) vendorSignUpHandler(w http.ResponseWriter, req *http.Req
 	}
 
 	http.SetCookie(w, &http.Cookie{Name: "session", Value: sign_up_resp.Session.Id,
-		Expires: sign_up_resp.Session.CreatedAt.Add(24 * time.Hour)})
+		Expires: sign_up_resp.Session.CreatedAt.Add(730 * time.Hour)})
 
 	b, err := json.Marshal(sign_up_resp)
 	if err != nil {
@@ -80,7 +80,7 @@ func (v *vendorHandler) vendorSignUpHandler(w http.ResponseWriter, req *http.Req
 	w.Write(b)
 }
 
-func (v *vendorHandler) vendorProductHandler(w http.ResponseWriter, req *http.Request) {
+func (v *vendorHandler) vendorProduct(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	if req.Method != "POST" {
@@ -122,7 +122,7 @@ func (v *vendorHandler) vendorProductHandler(w http.ResponseWriter, req *http.Re
 	w.Write(b)
 }
 
-func (v *vendorHandler) vendorMessageHandler(w http.ResponseWriter, req *http.Request) {
+func (v *vendorHandler) vendorMessage(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	vendor_pk := GetVendorPk(req.Context())
