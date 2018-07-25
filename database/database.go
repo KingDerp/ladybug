@@ -20,7 +20,7 @@ func (db *DB) WithTx(ctx context.Context,
 		if err == nil {
 			err = tx.Commit()
 		} else {
-			logrus.Error("error commiting transaction")
+			logrus.Error(err)
 			tx.Rollback()
 		}
 	}()

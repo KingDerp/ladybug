@@ -105,7 +105,7 @@ update address ( where address.pk = ? )
 
 
 // -------------------------------------------------------------- //
-model session (
+model buyer_session (
 	key    pk
 	unique id
 
@@ -115,13 +115,23 @@ model session (
 	field created_at  timestamp ( autoinsert )
 )
 
-create session()
+create buyer_session()
 
-create session( noreturn )
+create buyer_session( noreturn )
 
 read one (
-    select session.buyer_pk
-    where session.id = ?
+    select buyer_session.buyer_pk
+    where buyer_session.id = ?
+)
+
+read one (
+    select buyer_session 
+    where buyer_session.buyer_pk = ?
+)
+
+read first (
+    select buyer_session
+    where buyer_session.buyer_pk = ?
 )
 
 // -------------------------------------------------------------- //

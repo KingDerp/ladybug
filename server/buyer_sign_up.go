@@ -23,10 +23,10 @@ type SignUpRequest struct {
 }
 
 type SignUpResponse struct {
-	Session *database.Session
+	Session *database.BuyerSession
 }
 
-func (u *BuyerServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *SignUpResponse,
+func (u *BuyerServer) BuyerSignUp(ctx context.Context, req *SignUpRequest) (resp *SignUpResponse,
 	err error) {
 
 	err = ValidateBuyerSignUpRequest(req)
@@ -39,7 +39,7 @@ func (u *BuyerServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *Sig
 		return nil, err
 	}
 
-	var session *database.Session
+	var session *database.BuyerSession
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 
 		buyer, err := tx.Create_Buyer(ctx, database.Buyer_Id(uuid.NewV4().String()),
@@ -77,8 +77,8 @@ func (u *BuyerServer) SignUp(ctx context.Context, req *SignUpRequest) (resp *Sig
 				database.Address_Id(uuid.NewV4().String()))
 		}
 
-		session, err = tx.Create_Session(ctx, database.Session_BuyerPk(buyer.Pk),
-			database.Session_Id(uuid.NewV4().String()))
+		session, err = tx.Create_BuyerSession(ctx, database.BuyerSession_BuyerPk(buyer.Pk),
+			database.BuyerSession_Id(uuid.NewV4().String()))
 		if err != nil {
 			return err
 		}

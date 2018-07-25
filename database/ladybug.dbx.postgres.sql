@@ -23,6 +23,14 @@ CREATE TABLE buyers (
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
 );
+CREATE TABLE buyer_sessions (
+	pk bigserial NOT NULL,
+	buyer_pk bigint NOT NULL,
+	id text NOT NULL,
+	created_at timestamp with time zone NOT NULL,
+	PRIMARY KEY ( pk ),
+	UNIQUE ( id )
+);
 CREATE TABLE emails (
 	pk bigserial NOT NULL,
 	buyer_pk bigint NOT NULL,
@@ -80,14 +88,6 @@ CREATE TABLE purchased_products (
 	buyer_pk bigint NOT NULL,
 	product_pk bigint NOT NULL,
 	purchase_price real NOT NULL,
-	created_at timestamp with time zone NOT NULL,
-	PRIMARY KEY ( pk ),
-	UNIQUE ( id )
-);
-CREATE TABLE sessions (
-	pk bigserial NOT NULL,
-	buyer_pk bigint NOT NULL,
-	id text NOT NULL,
 	created_at timestamp with time zone NOT NULL,
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )

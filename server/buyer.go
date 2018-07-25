@@ -168,8 +168,8 @@ type LogInRequest struct {
 	Email    string `json:"email"`
 }
 
-func (u *BuyerServer) LogIn(ctx context.Context, req *LogInRequest) (resp *database.Session,
-	err error) {
+func (u *BuyerServer) BuyerLogIn(ctx context.Context, req *LogInRequest) (
+	resp *database.BuyerSession, err error) {
 
 	var email *database.Email
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
@@ -193,11 +193,11 @@ func (u *BuyerServer) LogIn(ctx context.Context, req *LogInRequest) (resp *datab
 		return nil, err
 	}
 
-	var session *database.Session
+	var session *database.BuyerSession
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 
-		session, err = tx.Create_Session(ctx, database.Session_BuyerPk(email.BuyerPk),
-			database.Session_Id(uuid.NewV4().String()))
+		session, err = tx.Create_BuyerSession(ctx, database.BuyerSession_BuyerPk(email.BuyerPk),
+			database.BuyerSession_Id(uuid.NewV4().String()))
 		if err != nil {
 			return err
 		}

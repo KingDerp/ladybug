@@ -94,7 +94,7 @@ func (u *buyerHandler) buyerSignUp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sign_up_resp, err := u.buyerServer.SignUp(ctx, &sign_up_req)
+	sign_up_resp, err := u.buyerServer.BuyerSignUp(ctx, &sign_up_req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		logrus.Errorf("%+v", err)
@@ -121,7 +121,7 @@ func (u *buyerHandler) buyerLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	session, err := u.buyerServer.LogIn(ctx, &log_in_req)
+	session, err := u.buyerServer.BuyerLogIn(ctx, &log_in_req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

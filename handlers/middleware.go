@@ -43,8 +43,8 @@ func (a *authMiddleware) CheckBuyerSessionCookie(handler http.Handler) http.Hand
 			return
 		}
 
-		pk_row, err := a.db.Get_Session_BuyerPk_By_Id(req.Context(),
-			database.Session_Id(cookie.Value))
+		pk_row, err := a.db.Get_BuyerSession_BuyerPk_By_Id(req.Context(),
+			database.BuyerSession_Id(cookie.Value))
 		if err != nil {
 			http.Error(w, fmt.Sprint(err), http.StatusUnauthorized)
 			return
