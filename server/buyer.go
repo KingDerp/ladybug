@@ -2,9 +2,10 @@ package server
 
 import (
 	"context"
-	"ladybug/database"
 	"strings"
 	"time"
+
+	"ladybug/database"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/zeebo/errs"
@@ -23,46 +24,45 @@ func NewBuyerServer(db *database.DB) *BuyerServer {
 	return &BuyerServer{db: db}
 }
 
+type BuyerEmail struct {
+	Address string
+}
+
+type Buyer struct {
+	FirstName string        `jsons:"firstName"`
+	LastName  string        `jsons:"lastName"`
+	Emails    []*BuyerEmail `json:"emails"`
+}
+
+func BuyerEmailFromDB(email *database.BuyerEmail) *BuyerEmail {
+	return &BuyerEmail{
+		Address: email.Address,
+	}
+}
+
+func BuyerEmailsFromDB(emails []*database.BuyerEmail) []*BuyerEmail {
+	out := []*BuyerEmail{}
+	for _, email := range emails {
+		out = append(out, BuyerEmailFromDB(email))
+	}
+	return out
+
+}
+
+func BuyerFromDB(buyer *database.Buyer, emails []*database.BuyerEmail) *Buyer {
+	return &Buyer{
+		FirstName: buyer.FirstName,
+		LastName:  buyer.LastName,
+		Emails:    BuyerEmailsFromDB(emails),
+	}
+}
+
 type GetBuyerRequest struct {
 	BuyerPk int64
 }
 
 type GetBuyerResponse struct {
 	Buyer *Buyer
-}
-
-type Email struct {
-	Address string
-}
-
-type Buyer struct {
-	FullName  string   `json:"fullName"`
-	FirstName string   `jsons:"firstName"`
-	LastName  string   `jsons:"lastName"`
-	Emails    []*Email `json:"emails"`
-}
-
-func EmailFromDB(email *database.Email) *Email {
-	return &Email{
-		Address: email.Address,
-	}
-}
-
-func EmailsFromDB(emails []*database.Email) []*Email {
-	out := []*Email{}
-	for _, email := range emails {
-		out = append(out, EmailFromDB(email))
-	}
-	return out
-
-}
-
-func BuyerFromDB(buyer *database.Buyer, emails []*database.Email) *Buyer {
-	return &Buyer{
-		FirstName: buyer.FirstName,
-		LastName:  buyer.LastName,
-		Emails:    EmailsFromDB(emails),
-	}
 }
 
 func (u *BuyerServer) GetBuyer(ctx context.Context, req *GetBuyerRequest) (
@@ -74,7 +74,7 @@ func (u *BuyerServer) GetBuyer(ctx context.Context, req *GetBuyerRequest) (
 			return err
 		}
 
-		emails, err := tx.All_Email_By_BuyerPk(ctx, database.Email_BuyerPk(req.BuyerPk))
+		emails, err := tx.All_BuyerEmail_By_BuyerPk(ctx, database.BuyerEmail_BuyerPk(req.BuyerPk))
 		if err != nil {
 			return err
 		}
@@ -89,80 +89,6 @@ func (u *BuyerServer) GetBuyer(ctx context.Context, req *GetBuyerRequest) (
 	return resp, nil
 }
 
-type UpdateBuyerRequest struct {
-	FirstName       string `json:"firstName"`
-	LastName        string `json:"lastName"`
-	Email           string `json:"email"`
-	CurrentPassword string `json:"currentPassword"`
-	NewPassword     string `json:"password"`
-}
-
-type UpdateBuyerResponse struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
-}
-
-func (u *BuyerServer) UpdateBuyer(ctx context.Context, req *UpdateBuyerRequest) (
-	resp *UpdateBuyerResponse, err error) {
-
-	var email *database.Email
-	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
-		email, err = tx.Get_Email_By_Address(ctx, database.Email_Address(req.Email))
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	hash, err := hashPassword(req.CurrentPassword)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := comparePasswordHash(hash, email.SaltedHash); err != nil {
-		return nil, err
-	}
-
-	buyer_updates := database.Buyer_Update_Fields{
-		FirstName: database.Buyer_FirstName(req.FirstName),
-		LastName:  database.Buyer_LastName(req.LastName),
-	}
-
-	email_updates := database.Email_Update_Fields{
-		Address:    database.Email_Address(req.Email),
-		SaltedHash: database.Email_SaltedHash(hash),
-	}
-
-	var buyer *database.Buyer
-	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
-		buyer, err = tx.Update_Buyer_By_Pk(ctx, database.Buyer_Pk(email.BuyerPk), buyer_updates)
-		if err != nil {
-			return err
-		}
-
-		email, err = tx.Update_Email_By_Pk(ctx, database.Email_Pk(email.Pk), email_updates)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &UpdateBuyerResponse{
-		FirstName: buyer.FirstName,
-		LastName:  buyer.LastName,
-		Email:     email.Address,
-	}, nil
-}
-
 type LogInRequest struct {
 	Password string `json:"password"`
 	Email    string `json:"email"`
@@ -171,10 +97,10 @@ type LogInRequest struct {
 func (u *BuyerServer) BuyerLogIn(ctx context.Context, req *LogInRequest) (
 	resp *database.BuyerSession, err error) {
 
-	var email *database.Email
+	var email *database.BuyerEmail
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
-		email, err = tx.Find_Email_By_Address(ctx, database.Email_Address(
-			strings.ToLower(req.Email)))
+		email, err = tx.Find_BuyerEmail_By_Address(ctx,
+			database.BuyerEmail_Address(strings.ToLower(req.Email)))
 		if err != nil {
 			return err
 		}
@@ -373,7 +299,7 @@ func (u *BuyerServer) PostBuyerMessage(ctx context.Context, req *PostBuyerMessag
 	return &PostBuyerMessageResponse{Message: MessageFromDB(message)}, nil
 }
 
-//HashPassword takes a string, creates a hash using that string and returns the hash in a string
+//hashPassword takes a string, creates a hash using that string and returns the hash in a string
 //format. One should note that GenerateFromPassword uses base64 encoding in it's logic.
 func hashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -384,7 +310,7 @@ func hashPassword(password string) (string, error) {
 	//return base64.URLEncoding.EncodeToString(hash), nil
 }
 
-//ComparePasswordHash - this funtion takes the unhashed version of the password and the hash to
+//comparePasswordHash - this funtion takes the unhashed version of the password and the hash to
 //compare it against. returns an error if there was an internal problem or if the hashed and
 //unhashed password do not match
 func comparePasswordHash(password, hash string) error {

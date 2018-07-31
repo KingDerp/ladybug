@@ -48,9 +48,12 @@ func (u *BuyerServer) BuyerSignUp(ctx context.Context, req *SignUpRequest) (resp
 			return err
 		}
 
-		err = tx.CreateNoReturn_Email(ctx, database.Email_BuyerPk(buyer.Pk),
-			database.Email_Address(strings.ToLower(req.Email)), database.Email_SaltedHash(hash),
-			database.Email_Id(uuid.NewV4().String()))
+		err = tx.CreateNoReturn_BuyerEmail(ctx,
+			database.BuyerEmail_BuyerPk(buyer.Pk),
+			database.BuyerEmail_Address(strings.ToLower(req.Email)),
+			database.BuyerEmail_SaltedHash(hash),
+			database.BuyerEmail_Id(uuid.NewV4().String()),
+		)
 		if database.IsConstraintViolationError(err) {
 			logrus.Error(err)
 			return errs.New("that email is already in use")

@@ -125,18 +125,18 @@ func CheckPassword(pw string) error {
 }
 
 func CheckFullName(first_name, last_name string) error {
-	if err := checkName(first_name); err != nil {
+	if err := CheckName(first_name); err != nil {
 		return err
 	}
 
-	if err := checkName(last_name); err != nil {
+	if err := CheckName(last_name); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func checkName(name string) error {
+func CheckName(name string) error {
 	switch {
 	case name == "":
 		return errs.New("name must not be empty")

@@ -23,15 +23,7 @@ CREATE TABLE buyers (
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
 );
-CREATE TABLE buyer_sessions (
-	pk bigserial NOT NULL,
-	buyer_pk bigint NOT NULL,
-	id text NOT NULL,
-	created_at timestamp with time zone NOT NULL,
-	PRIMARY KEY ( pk ),
-	UNIQUE ( id )
-);
-CREATE TABLE emails (
+CREATE TABLE buyer_emails (
 	pk bigserial NOT NULL,
 	buyer_pk bigint NOT NULL,
 	created_at timestamp with time zone NOT NULL,
@@ -41,6 +33,14 @@ CREATE TABLE emails (
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id ),
 	UNIQUE ( address )
+);
+CREATE TABLE buyer_sessions (
+	pk bigserial NOT NULL,
+	buyer_pk bigint NOT NULL,
+	id text NOT NULL,
+	created_at timestamp with time zone NOT NULL,
+	PRIMARY KEY ( pk ),
+	UNIQUE ( id )
 );
 CREATE TABLE executive_contacts (
 	pk bigserial NOT NULL,

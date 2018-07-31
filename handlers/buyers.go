@@ -48,11 +48,6 @@ func GetBuyer(ctx context.Context) *database.Buyer {
 //TODO(mac): write put for this function
 func (u *buyerHandler) buyer(w http.ResponseWriter, req *http.Request) {
 
-	if req.Method != "GET" {
-		http.Error(w, "method not allowed", http.StatusBadRequest)
-		return
-	}
-
 	ctx := req.Context()
 	if req.Method == "GET" {
 		buyer_pk := GetBuyerPk(req.Context())
@@ -73,6 +68,32 @@ func (u *buyerHandler) buyer(w http.ResponseWriter, req *http.Request) {
 		h := w.Header()
 		h.Set("Content-Type", "application/json")
 		w.Write(b)
+
+		return
+
+	}
+
+	if req.Method == "PUT" {
+		buyer_pk := GetBuyerPk(req.Context())
+
+		buyer_response, err := u.buyerServer.GetBuyer(ctx,
+			&server.GetBuyerRequest{BuyerPk: buyer_pk})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(buyer_response)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+
+		return
 
 	}
 }

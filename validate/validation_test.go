@@ -56,7 +56,7 @@ func TestValidateName(t *testing.T) {
 	}
 
 	for _, tt := range name_tests {
-		actual := checkName(tt.input)
+		actual := CheckName(tt.input)
 
 		if tt.expected == nil {
 			require.Equal(t, actual, tt.expected,

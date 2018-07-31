@@ -11,6 +11,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	defaultPassword = "Password8%"
+)
+
+func TestGetBuyerInfo(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
+
+	ctx := context.Background()
+
+	//buyer doesn't exist
+	b, err := test.db.Find_Buyer_By_Pk(ctx, database.Buyer_Pk(100))
+	require.NoError(t, err)
+	require.Nil(t, b)
+
+	buyer := test.createFullBuyer()
+	req := &GetBuyerRequest{BuyerPk: buyer.Pk}
+
+	//check response matches request
+	resp, err := test.BuyerServer.GetBuyer(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, resp.Buyer.FirstName, buyer.FirstName)
+	require.Equal(t, resp.Buyer.LastName, buyer.LastName)
+	require.Equal(t, resp.Buyer.Emails[0].Address, buyer.emails[0].Address)
+}
+
 func TestBuyerLogIn(t *testing.T) {
 	test := newTest(t)
 	defer test.tearDown()
@@ -221,13 +247,13 @@ func TestPasswordNotMatch(t *testing.T) {
 
 type FullTestBuyer struct {
 	*database.Buyer
-	emails    []*TestEmail
+	emails    []*BuyerTestEmail
 	addresses []*database.Address
 	session   *database.BuyerSession
 }
 
-type TestEmail struct {
-	*database.Email
+type BuyerTestEmail struct {
+	*database.BuyerEmail
 	unsaltedPassword string
 }
 
@@ -254,7 +280,7 @@ func (s *serverTest) compareSignUpWithDatabase(ctx context.Context, buyer_pk int
 	require.Equal(s.t, buyer.LastName, req.LastName)
 
 	//emails created
-	emails, err := s.db.All_Email_By_BuyerPk(ctx, database.Email_BuyerPk(buyer_pk))
+	emails, err := s.db.All_BuyerEmail_By_BuyerPk(ctx, database.BuyerEmail_BuyerPk(buyer_pk))
 	require.NoError(s.t, err)
 	require.Equal(s.t, len(emails), 1)
 	require.Equal(s.t, emails[0].Address, req.Email)
@@ -281,9 +307,9 @@ func (s *serverTest) compareSignUpWithDatabase(ctx context.Context, buyer_pk int
 	session, err := s.db.Get_BuyerSession_By_BuyerPk(ctx, database.BuyerSession_BuyerPk(buyer.Pk))
 	require.NoError(s.t, err)
 
-	test_emails := []*TestEmail{}
-	test_emails = append(test_emails, &TestEmail{
-		Email:            emails[0],
+	test_emails := []*BuyerTestEmail{}
+	test_emails = append(test_emails, &BuyerTestEmail{
+		BuyerEmail:       emails[0],
 		unsaltedPassword: req.Password,
 	})
 
@@ -302,7 +328,7 @@ func getCompleteSignUpRequest() *SignUpRequest {
 	return &SignUpRequest{
 		FirstName: "Joey",
 		LastName:  "Calzone",
-		Password:  "Password8%",
+		Password:  defaultPassword,
 		Email:     "joey@calzone.com",
 		BillingAddress: &validate.Address{
 			StreetAddress: "21 heartbreak ln",

@@ -25,43 +25,57 @@ read one (
     where buyer.id = ?
 )
 
+read scalar (
+    select buyer
+    where buyer.pk = ?
+)
+
 update buyer ( where buyer.pk = ? )
 
+update buyer ( 
+    where buyer.pk = ? 
+    noreturn
+)
 
 // -------------------------------------------------------------- //
-model email (
+model buyer_email (
 	key    pk
 	unique id
     unique address
 
 	field pk          serial64
-    field buyer_pk     int64
+    field buyer_pk    int64
 	field created_at  timestamp ( autoinsert )
     field address     text ( updatable )
     field salted_hash text ( updatable )
 	field id          text
 )
 
-create email()
+create buyer_email()
 
-create email ( noreturn )
+create buyer_email ( noreturn )
 
 read all (
-    select email
-    where email.buyer_pk = ?
+    select buyer_email
+    where buyer_email.buyer_pk = ?
 )
 
 read one (
-    select email
-    where email.address = ?
+    select buyer_email
+    where buyer_email.address = ?
 )
 
 read scalar (
-    select email
-    where email.address = ?
+    select buyer_email
+    where buyer_email.address = ?
 )
 
-update email ( where email.pk = ? )
+update buyer_email ( where buyer_email.address = ? )
+
+update buyer_email ( 
+    where buyer_email.address = ? 
+    noreturn
+)
 
 // -------------------------------------------------------------- //
 model address (
