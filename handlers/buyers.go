@@ -6,7 +6,6 @@ import (
 	"ladybug/database"
 	"ladybug/server"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -160,17 +159,15 @@ func (u *buyerHandler) buyerProducts(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 
-	category_param := req.URL.Query().Get("categories")
-	if category_param == "" {
-		category_param = "random"
+	decoder := json.NewDecoder(req.Body)
+	var products_req server.ProductRequest
+	err := decoder.Decode(&products_req)
+	if err != nil {
+		http.Error(w, "unable to parse json", http.StatusInternalServerError)
+		return
 	}
 
-	categories := strings.Split(category_param, ",")
-	products_req := &server.ProductRequest{
-		ProductCategories: categories,
-	}
-
-	products, err := u.buyerServer.BuyerProducts(ctx, products_req)
+	products, err := u.buyerServer.BuyerProducts(ctx, &products_req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

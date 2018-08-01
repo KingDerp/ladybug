@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"strconv"
 	"testing"
 
 	"ladybug/database"
@@ -14,6 +16,64 @@ import (
 var (
 	defaultPassword = "Password8%"
 )
+
+//func createVendorInDatabase
+
+func TestGetBuyerProducts(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
+
+	//set up
+	ctx := context.Background()
+	vendor := test.createVendorInDB(ctx)
+	test.createActiveAndApprovedProductsInStock(ctx, 100, vendor.Pk)
+
+	//productRequestLimit test
+	resp, err := test.BuyerServer.BuyerProducts(ctx, &ProductRequest{})
+	require.NoError(t, err)
+	require.Equal(t, len(resp.Products), productRequestLimit)
+
+	//token number test
+	token_num, err := strconv.Atoi(resp.PageToken)
+	require.NoError(t, err)
+	require.Equal(t, token_num, productRequestLimit)
+}
+
+func TestGetBuyerProductsActiveOnly(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
+
+	//set up
+	ctx := context.Background()
+	vendor := test.createVendorInDB(ctx)
+	test.createActiveAndApprovedProductsInStock(ctx, 100, vendor.Pk)
+	test.createInactiveAndApprovedProductsInStock(ctx, 50, vendor.Pk)
+
+	//only active products in response
+	resp, err := test.BuyerServer.BuyerProducts(ctx, &ProductRequest{})
+	require.NoError(t, err)
+	require.True(t, test.allProductsAreActive(resp.Products))
+
+	//inactive products match count
+	count, err := test.db.Count_Product_By_ProductActive_Equal_False(ctx)
+	require.NoError(t, err)
+	require.Equal(t, count, int64(50))
+}
+
+func TestGetBuyerProductsNotApproved(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
+
+	//set up
+	ctx := context.Background()
+	vendor := test.createVendorInDB(ctx)
+	test.createActiveProductsNotApprovedInStock(ctx, 50, vendor.Pk)
+
+	//no products returned
+	resp, err := test.BuyerServer.BuyerProducts(ctx, &ProductRequest{})
+	require.NoError(t, err)
+	require.Equal(t, len(resp.Products), 0)
+}
 
 func TestGetBuyerInfo(t *testing.T) {
 	test := newTest(t)
@@ -321,6 +381,8 @@ func (s *serverTest) compareSignUpWithDatabase(ctx context.Context, buyer_pk int
 	}
 }
 
+//---------------------------------- helpers -----------------------------------------------//
+
 //getCompleteSignUpRequest will return a pointer to a SignUpRequest that is intended to be complete.
 //Meaning is a request to sign up a new buyer is made with the returned SignUpRequest there should
 //be no errors with the request
@@ -343,4 +405,8 @@ func getCompleteSignUpRequest() *SignUpRequest {
 			Zip:           87569,
 		},
 	}
+}
+
+func randFloat(min, max float32) float32 {
+	return min + rand.Float32()*(max-min)
 }

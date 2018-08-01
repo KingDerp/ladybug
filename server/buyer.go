@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	productRequestLimit = 10
+	productRequestLimit = 25
 )
 
 type BuyerServer struct {
@@ -137,10 +137,8 @@ func (u *BuyerServer) BuyerLogIn(ctx context.Context, req *LogInRequest) (
 	return session, nil
 }
 
-//serverProduct represents data from database.Products that is safe for public consumption
-//TODO(mac): I don't like the name of this struct is there a better name to differentiate it from
-//the database object?
-type serverProduct struct {
+type Product struct {
+	Id             string  `json:"id"`
 	Price          float32 `json:"price"`
 	Discount       float32 `json:"discount"`
 	DiscountActive bool    `json:"discountActive"`
@@ -151,18 +149,20 @@ type serverProduct struct {
 }
 
 type ProductResponse struct {
-	Products []*serverProduct `json:"products"`
+	Products  []*Product `json:"products"`
+	PageToken string     `json:"pageToken"`
 }
 
 type ProductRequest struct {
-	ProductCategories []string `json:"productCategory"`
+	PageToken string `json:"pageToken"`
 }
 
-func ProductsFromDB(db_products []*database.Product) []*serverProduct {
+func ProductsFromDB(db_products []*database.Product) []*Product {
 
-	products := []*serverProduct{}
+	products := []*Product{}
 	for _, p := range db_products {
-		products = append(products, &serverProduct{
+		products = append(products, &Product{
+			Id:             p.Id,
 			Price:          p.Price,
 			Discount:       p.Discount,
 			DiscountActive: p.DiscountActive,
@@ -176,20 +176,20 @@ func ProductsFromDB(db_products []*database.Product) []*serverProduct {
 	return products
 }
 
-//TODO(mac): this endpoint needs to be paginated
 func (u *BuyerServer) BuyerProducts(ctx context.Context, req *ProductRequest) (
 	resp *ProductResponse, err error) {
 
-	//TODO(mac): eventually we need to use the request to search for products by category
 	product_response := &ProductResponse{}
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 
-		db_products, err := tx.All_Product_By_ProductActive_Equal_True(ctx)
+		db_products, ctoken, err := tx.Paged_Product_By_ProductActive_Equal_True_And_LadybugApproved_Equal_True_And_NumInStock_Not_Number(
+			ctx, productRequestLimit, req.PageToken)
 		if err != nil {
 			return err
 		}
 
 		product_response.Products = ProductsFromDB(db_products)
+		product_response.PageToken = ctoken
 
 		return nil
 	})

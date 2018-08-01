@@ -29,6 +29,7 @@ func NewHandler(db *database.DB) *Handler {
 	mux.Handle("/buyer/sign-up", http.HandlerFunc(u.buyerSignUp))
 	mux.Handle("/buyer", a.CheckBuyerSessionCookie(http.HandlerFunc(u.buyer)))
 	mux.Handle("/products", http.HandlerFunc(u.buyerProducts))
+	//TODO make a /products/category endpoint that lets you search products by category
 	mux.Handle("/buyer/messages", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
 
 	//vendor endpoints
