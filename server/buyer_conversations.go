@@ -2,16 +2,47 @@ package server
 
 import (
 	"context"
+
 	"ladybug/database"
 )
+
+type Conversation struct {
+	Id string `json:"id"`
+}
+
+type BuyerConversationsUnreadReq struct {
+	BuyerPk int64
+}
+
+type BuyerConversationsUnreadResp struct {
+	Conversations []*Conversation `json:"conversations"`
+}
+
+func (u *BuyerServer) GetBuyerConversationsUnread(ctx context.Context,
+	req *BuyerConversationsUnreadReq) (resp *BuyerConversationsUnreadResp, err error) {
+
+	var conversations []*database.Conversation
+	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+		conversations, err = tx.All_Conversation_By_BuyerPk_And_BuyerUnread_Equal_True(ctx,
+			database.Conversation_BuyerPk(req.BuyerPk))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &BuyerConversationsUnreadResp{
+		Conversations: ConversationsFromDB(conversations),
+	}, nil
+}
 
 type PagedBuyerConversationsReq struct {
 	BuyerPk   int64
 	PageToken string `json:"pageToken"`
-}
-
-type Conversation struct {
-	Id string `json:"id"`
 }
 
 type PagedBuyerConversationResp struct {

@@ -184,7 +184,7 @@ func (u *buyerHandler) buyerProducts(w http.ResponseWriter, req *http.Request) {
 	w.Write(b)
 }
 
-func (u *buyerHandler) getPagedBuyerConversation(w http.ResponseWriter, req *http.Request) {
+func (u *buyerHandler) getPagedBuyerConversations(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	if req.Method == "GET" {
@@ -217,10 +217,37 @@ func (u *buyerHandler) getPagedBuyerConversation(w http.ResponseWriter, req *htt
 		w.Write(b)
 
 		return
-
 	}
 
 	http.Error(w, "method not allowed", http.StatusBadRequest)
 	return
+}
 
+func (u *buyerHandler) getBuyerConversationsUnread(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	if req.Method == "GET" {
+		req := &BuyerConversationsUnreadReq{BuyerPk: GetBuyerPk(req.Context())}
+
+		conversations, err := u.buyerServer.GetBuyerConversationsUnread(ctx, req)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(conversations)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+
+		return
+	}
+
+	http.Error(w, "method not allowed", http.StatusBadRequest)
+	return
 }

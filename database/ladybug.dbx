@@ -359,9 +359,9 @@ model conversation (
     field pk              serial64
     field vendor_pk       int64
     field buyer_pk        int64
-    field buyer_unread    bool
-    field vendor_unread   bool
-    field num_messages    int64
+    field buyer_unread    bool ( updatable )
+    field vendor_unread   bool ( updatable )
+    field num_messages    int64 ( updatable )
     field id              text
     field created_at      timestamp ( autoinsert )
 )
@@ -399,6 +399,11 @@ read all (
 read paged (
     select conversation
     where conversation.buyer_pk = ?
+)
+
+update conversation (
+    where conversation.pk = ?    
+    noreturn
 )
 
 // -------------------------------------------------------------- //

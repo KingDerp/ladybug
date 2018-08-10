@@ -18,29 +18,22 @@ var (
 	defaultPassword = "Password8%"
 )
 
-func (s *serverTest) createConversationInDB(buyer *database.Buyer, vendor *database.Vendor) *database.Conversation {
-	c, err := s.db.Create_Conversation(context.Background(),
-		database.Conversation_VendorPk(vendor.Pk),
-		database.Conversation_BuyerPk(buyer.Pk),
-		database.Conversation_BuyerUnread(false),
-		database.Conversation_VendorUnread(false),
-		database.Conversation_NumMessages(0),
-		database.Conversation_Id(uuid.NewV4().String()),
-	)
-	require.NoError(s.t, err)
+func TestGetBuyerConversationsUnread(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
 
-	return c
-}
+	//set up
+	ctx := context.Background()
+	vendors := test.createVendorsInDB(ctx, 50)
+	buyer := test.createBuyer(ctx, &createBuyerInDBOptions{})
+	conversations := test.createConversationsWithVendors(buyer, vendors)
+	test.createDefaultMessagesFromVendor(ctx, conversations[:20])
 
-func (s *serverTest) createConversationsWithVendors(buyer *database.Buyer, vendors []*database.Vendor) (
-	conversations []*database.Conversation) {
-
-	conversations = []*database.Conversation{}
-	for _, v := range vendors {
-		conversations = append(conversations, s.createConversationInDB(buyer, v))
-	}
-
-	return conversations
+	//get unread conversations
+	req := &BuyerConversationsUnreadReq{BuyerPk: buyer.Pk}
+	resp, err := test.BuyerServer.GetBuyerConversationsUnread(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, len(resp.Conversations), 20)
 }
 
 func TestGetPagedBuyerConversations(t *testing.T) {
@@ -53,11 +46,13 @@ func TestGetPagedBuyerConversations(t *testing.T) {
 	buyer := test.createBuyer(ctx, &createBuyerInDBOptions{})
 	test.createConversationsWithVendors(buyer, vendors)
 
+	//get first set of paged results
 	req := &PagedBuyerConversationsReq{BuyerPk: buyer.Pk}
 	resp, err := test.BuyerServer.GetPagedBuyerConversations(ctx, req)
 	require.NoError(t, err)
 	require.Equal(t, resp.PageToken, strconv.Itoa(conversationRequestLimit))
 
+	//get second set of paged results
 	req.PageToken = resp.PageToken
 	resp, err = test.BuyerServer.GetPagedBuyerConversations(ctx, req)
 	require.NoError(t, err)
@@ -451,4 +446,88 @@ func getCompleteSignUpRequest() *SignUpRequest {
 
 func randFloat(min, max float32) float32 {
 	return min + rand.Float32()*(max-min)
+}
+
+func (s *serverTest) createConversationInDB(buyer *database.Buyer, vendor *database.Vendor) *database.Conversation {
+	c, err := s.db.Create_Conversation(context.Background(),
+		database.Conversation_VendorPk(vendor.Pk),
+		database.Conversation_BuyerPk(buyer.Pk),
+		database.Conversation_BuyerUnread(false),
+		database.Conversation_VendorUnread(false),
+		database.Conversation_NumMessages(0),
+		database.Conversation_Id(uuid.NewV4().String()),
+	)
+	require.NoError(s.t, err)
+
+	return c
+}
+
+func (s *serverTest) createConversationsWithVendors(buyer *database.Buyer, vendors []*database.Vendor) (
+	conversations []*database.Conversation) {
+
+	conversations = []*database.Conversation{}
+	for _, v := range vendors {
+		conversations = append(conversations, s.createConversationInDB(buyer, v))
+	}
+
+	return conversations
+}
+
+type newMessageOptions struct {
+	Id          string
+	BuyerSent   bool
+	Description string
+}
+
+func (s *serverTest) createNewMessage(ctx context.Context, conversation *database.Conversation,
+	options *newMessageOptions) (
+	message *database.Message) {
+
+	require.NotNil(s.t, conversation)
+
+	if options == nil {
+		options = &newMessageOptions{}
+	}
+
+	if options.Id == "" {
+		options.Id = uuid.NewV4().String()
+	}
+
+	if options.Description == "" {
+		options.Description = "default message body"
+	}
+
+	message, err := s.db.Create_Message(ctx,
+		database.Message_Id(uuid.NewV4().String()),
+		database.Message_BuyerSent(options.BuyerSent),
+		database.Message_Description(options.Description),
+		database.Message_ConversationPk(conversation.Pk),
+		database.Message_Number(conversation.NumMessages+1),
+	)
+	require.NoError(s.t, err)
+
+	updates := database.Conversation_Update_Fields{
+		NumMessages: database.Conversation_NumMessages(conversation.NumMessages + 1),
+	}
+
+	if options.BuyerSent == false {
+		updates.BuyerUnread = database.Conversation_BuyerUnread(true)
+	} else {
+		updates.VendorUnread = database.Conversation_VendorUnread(true)
+	}
+
+	err = s.db.UpdateNoReturn_Conversation_By_Pk(ctx,
+		database.Conversation_Pk(conversation.Pk), updates)
+	require.NoError(s.t, err)
+
+	return message
+}
+
+func (s *serverTest) createDefaultMessagesFromVendor(ctx context.Context,
+	conversations []*database.Conversation) {
+
+	messages := []*database.Message{}
+	for _, c := range conversations {
+		messages = append(messages, s.createNewMessage(ctx, c, nil))
+	}
 }
