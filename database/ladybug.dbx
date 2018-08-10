@@ -352,35 +352,89 @@ read one (
 )
 
 // -------------------------------------------------------------- //
+model conversation (
+    key pk
+    unique id
+
+    field pk              serial64
+    field vendor_pk       int64
+    field buyer_pk        int64
+    field buyer_unread    bool
+    field vendor_unread   bool
+    field num_messages    int64
+    field id              text
+    field created_at      timestamp ( autoinsert )
+)
+
+create conversation()
+
+read scalar (
+    select conversation
+    where conversation.vendor_pk = ?
+    where conversation.buyer_pk = ?
+)
+
+read all (
+    select conversation
+    where conversation.buyer_pk = ?
+    where conversation.vendor_unread = true
+)
+
+read all (
+    select conversation
+    where conversation.buyer_pk = ?
+    where conversation.buyer_unread = true
+)
+
+read all (
+    select conversation
+    where conversation.buyer_pk = ?
+)
+
+read all (
+    select conversation
+    where conversation.vendor_pk = ?
+)
+
+read paged (
+    select conversation
+    where conversation.buyer_pk = ?
+)
+
+// -------------------------------------------------------------- //
 model message (
 	key    pk
 	unique id
 
-    field pk         serial64
-    field vendor_pk  int64
-    field buyer_pk    int64
-    field id         text
-    field created_at timestamp ( autoinsert )
-    field buyer_sent bool
-    field parent_pk  int64 ( nullable )//indicates the parent message to which this is a reply
-    field message    text
+    field pk              serial64
+    field id              text
+    field created_at      timestamp ( autoinsert )
+    field buyer_sent      bool
+    field description     text
+    field conversation_pk int64
+    field number          int64
 )
 
 create message()
 
 create message( noreturn )
 
-read all (
-    select message
-    where message.buyer_pk = ?
-)
-
-read all (
-    select message
-    where message.vendor_pk = ?
-)
-
 read one (
     select message
     where message.id = ?
+)
+
+read limitoffset (
+    select message
+    where message.conversation_pk = ?
+    orderby desc message.created_at
+)
+
+read all (
+    select message.buyer_sent message.description
+    join message.conversation_pk = conversation.pk
+    join conversation.vendor_pk = vendor.pk
+    where message.conversation_pk = ?
+    where vendor.pk = ?
+    orderby desc message.number
 )

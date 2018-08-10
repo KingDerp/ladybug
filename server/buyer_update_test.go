@@ -90,7 +90,8 @@ func TestValidateBuyerRequestFieldsInvalidPass(t *testing.T) {
 	defer test.tearDown()
 
 	//set up
-	buyer := test.createFullBuyer()
+	ctx := context.Background()
+	buyer := test.createFullTestBuyer(ctx)
 	req := getFullUpdateBuyerRequest(buyer)
 	req_fields := BuyerRequestFieldsFromUpdateRequest(req)
 
@@ -106,7 +107,8 @@ func TestValidateBuyerRequestFieldsSuccess(t *testing.T) {
 	defer test.tearDown()
 
 	//set up
-	buyer := test.createFullBuyer()
+	ctx := context.Background()
+	buyer := test.createFullTestBuyer(ctx)
 	req := getFullUpdateBuyerRequest(buyer)
 	req_fields := BuyerRequestFieldsFromUpdateRequest(req)
 
@@ -121,9 +123,9 @@ func TestUpdateBuyerFirstNameOnly(t *testing.T) {
 	defer test.tearDown()
 
 	//set up
-	buyer := test.createFullBuyer()
-	req := getFullUpdateBuyerRequest(buyer)
 	ctx := context.Background()
+	buyer := test.createFullTestBuyer(ctx)
+	req := getFullUpdateBuyerRequest(buyer)
 
 	//update first name only
 	req.FirstName = "Harpo"
@@ -138,9 +140,9 @@ func TestUpdateBuyerLastNameOnly(t *testing.T) {
 	defer test.tearDown()
 
 	//set up
-	buyer := test.createFullBuyer()
-	req := getFullUpdateBuyerRequest(buyer)
 	ctx := context.Background()
+	buyer := test.createFullTestBuyer(ctx)
+	req := getFullUpdateBuyerRequest(buyer)
 
 	//update last name only
 	req.LastName = "jojo"
@@ -155,9 +157,9 @@ func TestUpdateBuyerFirstAndLastName(t *testing.T) {
 	defer test.tearDown()
 
 	//set up
-	buyer := test.createFullBuyer()
-	req := getFullUpdateBuyerRequest(buyer)
 	ctx := context.Background()
+	buyer := test.createFullTestBuyer(ctx)
+	req := getFullUpdateBuyerRequest(buyer)
 
 	//update first and last name together
 	req.FirstName = "Osh Kosh"
@@ -175,9 +177,9 @@ func TestUpdateBuyerEmailOnly(t *testing.T) {
 	defer test.tearDown()
 
 	//set up
-	buyer := test.createFullBuyer()
-	req := getFullUpdateBuyerRequest(buyer)
 	ctx := context.Background()
+	buyer := test.createFullTestBuyer(ctx)
+	req := getFullUpdateBuyerRequest(buyer)
 
 	//update email
 	req.NewEmail = "test@testemail.com"
@@ -192,9 +194,9 @@ func TestUpdateBuyerEmailAndPassword(t *testing.T) {
 	defer test.tearDown()
 
 	//set up
-	buyer := test.createFullBuyer()
-	req := getFullUpdateBuyerRequest(buyer)
 	ctx := context.Background()
+	buyer := test.createFullTestBuyer(ctx)
+	req := getFullUpdateBuyerRequest(buyer)
 
 	//update email and password
 	req.NewEmail = "newemail@email.com"
@@ -210,9 +212,9 @@ func TestUpdateBuyerAllFields(t *testing.T) {
 	defer test.tearDown()
 
 	//set up
-	buyer := test.createFullBuyer()
-	req := getFullUpdateBuyerRequest(buyer)
 	ctx := context.Background()
+	buyer := test.createFullTestBuyer(ctx)
+	req := getFullUpdateBuyerRequest(buyer)
 
 	req.FirstName = "new first name"
 	req.LastName = "new last name"

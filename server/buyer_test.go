@@ -10,6 +10,7 @@ import (
 	"ladybug/database"
 	"ladybug/validate"
 
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,7 +18,51 @@ var (
 	defaultPassword = "Password8%"
 )
 
-//func createVendorInDatabase
+func (s *serverTest) createConversationInDB(buyer *database.Buyer, vendor *database.Vendor) *database.Conversation {
+	c, err := s.db.Create_Conversation(context.Background(),
+		database.Conversation_VendorPk(vendor.Pk),
+		database.Conversation_BuyerPk(buyer.Pk),
+		database.Conversation_BuyerUnread(false),
+		database.Conversation_VendorUnread(false),
+		database.Conversation_NumMessages(0),
+		database.Conversation_Id(uuid.NewV4().String()),
+	)
+	require.NoError(s.t, err)
+
+	return c
+}
+
+func (s *serverTest) createConversationsWithVendors(buyer *database.Buyer, vendors []*database.Vendor) (
+	conversations []*database.Conversation) {
+
+	conversations = []*database.Conversation{}
+	for _, v := range vendors {
+		conversations = append(conversations, s.createConversationInDB(buyer, v))
+	}
+
+	return conversations
+}
+
+func TestGetPagedBuyerConversations(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
+
+	//set up
+	ctx := context.Background()
+	vendors := test.createVendorsInDB(ctx, 50)
+	buyer := test.createBuyer(ctx, &createBuyerInDBOptions{})
+	test.createConversationsWithVendors(buyer, vendors)
+
+	req := &PagedBuyerConversationsReq{BuyerPk: buyer.Pk}
+	resp, err := test.BuyerServer.GetPagedBuyerConversations(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, resp.PageToken, strconv.Itoa(conversationRequestLimit))
+
+	req.PageToken = resp.PageToken
+	resp, err = test.BuyerServer.GetPagedBuyerConversations(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, resp.PageToken, strconv.Itoa(conversationRequestLimit*2))
+}
 
 func TestGetBuyerProducts(t *testing.T) {
 	test := newTest(t)
@@ -86,7 +131,7 @@ func TestGetBuyerInfo(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, b)
 
-	buyer := test.createFullBuyer()
+	buyer := test.createFullTestBuyer(ctx)
 	req := &GetBuyerRequest{BuyerPk: buyer.Pk}
 
 	//check response matches request
@@ -109,7 +154,7 @@ func TestBuyerLogIn(t *testing.T) {
 	require.EqualError(t, err, "No email exists with that address")
 	require.Nil(t, resp)
 
-	buyer := test.createFullBuyer()
+	buyer := test.createFullTestBuyer(ctx)
 
 	//password mismatch
 	req.Email = buyer.emails[0].Address
@@ -317,8 +362,7 @@ type BuyerTestEmail struct {
 	unsaltedPassword string
 }
 
-func (s *serverTest) createFullBuyer() *FullTestBuyer {
-	ctx := context.Background()
+func (s *serverTest) createFullTestBuyer(ctx context.Context) *FullTestBuyer {
 	req := getCompleteSignUpRequest()
 
 	resp, err := s.BuyerServer.BuyerSignUp(ctx, req)
@@ -380,8 +424,6 @@ func (s *serverTest) compareSignUpWithDatabase(ctx context.Context, buyer_pk int
 		session:   session,
 	}
 }
-
-//---------------------------------- helpers -----------------------------------------------//
 
 //getCompleteSignUpRequest will return a pointer to a SignUpRequest that is intended to be complete.
 //Meaning is a request to sign up a new buyer is made with the returned SignUpRequest there should

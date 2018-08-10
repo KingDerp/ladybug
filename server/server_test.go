@@ -55,6 +55,43 @@ func (h *serverTest) createVendorInDB(ctx context.Context) *database.Vendor {
 	return vendor
 }
 
+type createBuyerInDBOptions struct {
+	firstName string
+	lastName  string
+}
+
+func (h *serverTest) createBuyer(ctx context.Context, options *createBuyerInDBOptions) (
+	buyer *database.Buyer) {
+
+	require.NotNil(h.t, options)
+
+	if options.firstName == "" {
+		options.firstName = "some_firstName"
+	}
+
+	if options.lastName == "" {
+		options.lastName = "some_last_name"
+	}
+
+	buyer, err := h.db.Create_Buyer(ctx,
+		database.Buyer_Id(uuid.NewV4().String()),
+		database.Buyer_FirstName(options.firstName),
+		database.Buyer_LastName(options.lastName),
+	)
+	require.NoError(h.t, err)
+
+	return buyer
+}
+
+func (h *serverTest) createVendorsInDB(ctx context.Context, n int) []*database.Vendor {
+	vendors := []*database.Vendor{}
+	for i := 0; i < n; i++ {
+		vendors = append(vendors, h.createVendorInDB(ctx))
+	}
+
+	return vendors
+}
+
 type productOptions struct {
 	Price           float32
 	Discount        float32

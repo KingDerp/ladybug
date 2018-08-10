@@ -42,6 +42,18 @@ CREATE TABLE buyer_sessions (
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
 );
+CREATE TABLE conversations (
+	pk bigserial NOT NULL,
+	vendor_pk bigint NOT NULL,
+	buyer_pk bigint NOT NULL,
+	buyer_unread boolean NOT NULL,
+	vendor_unread boolean NOT NULL,
+	num_messages bigint NOT NULL,
+	id text NOT NULL,
+	created_at timestamp with time zone NOT NULL,
+	PRIMARY KEY ( pk ),
+	UNIQUE ( id )
+);
 CREATE TABLE executive_contacts (
 	pk bigserial NOT NULL,
 	id text NOT NULL,
@@ -54,13 +66,12 @@ CREATE TABLE executive_contacts (
 );
 CREATE TABLE messages (
 	pk bigserial NOT NULL,
-	vendor_pk bigint NOT NULL,
-	buyer_pk bigint NOT NULL,
 	id text NOT NULL,
 	created_at timestamp with time zone NOT NULL,
 	buyer_sent boolean NOT NULL,
-	parent_pk bigint,
-	message text NOT NULL,
+	description text NOT NULL,
+	conversation_pk bigint NOT NULL,
+	number bigint NOT NULL,
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
 );

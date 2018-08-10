@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"strings"
-	"time"
 
 	"ladybug/database"
 
@@ -13,7 +12,8 @@ import (
 )
 
 const (
-	productRequestLimit = 25
+	productRequestLimit      = 25
+	conversationRequestLimit = 20
 )
 
 type BuyerServer struct {
@@ -198,105 +198,6 @@ func (u *BuyerServer) BuyerProducts(ctx context.Context, req *ProductRequest) (
 	}
 
 	return product_response, nil
-}
-
-type GetBuyerMessageRequest struct {
-	BuyerPk int64
-}
-
-type GetBuyerMessagesResponse struct {
-	Messages []*serverMessage
-}
-
-type serverMessage struct {
-	Id        string    `json:"messageId"`
-	CreatedAt time.Time `json:"createdAt"`
-	BuyerSent bool      `json:"buyerSent"`
-	Message   string    `json:"message"`
-}
-
-func MessagesFromDB(db_messages []*database.Message) []*serverMessage {
-	server_messages := []*serverMessage{}
-	for _, m := range db_messages {
-		server_messages = append(server_messages, MessageFromDB(m))
-	}
-
-	return server_messages
-}
-
-func (u *BuyerServer) GetBuyerMessages(ctx context.Context, req *GetBuyerMessageRequest) (
-	resp *GetBuyerMessagesResponse, err error) {
-
-	message_response := &GetBuyerMessagesResponse{}
-	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
-
-		messages, err := tx.All_Message_By_BuyerPk(ctx,
-			database.Message_BuyerPk(req.BuyerPk))
-		if err != nil {
-			return err
-		}
-
-		message_response.Messages = MessagesFromDB(messages)
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return message_response, nil
-}
-
-type PostBuyerMessageRequest struct {
-	BuyerPk  int64  `json:"-"`
-	VendorId string `json:"vendorId"`
-	Message  string `json:"message"`
-}
-
-type PostBuyerMessageResponse struct {
-	Message *serverMessage `json:"message"`
-}
-
-func MessageFromDB(db_message *database.Message) *serverMessage {
-	return &serverMessage{
-		Id:        db_message.Id,
-		CreatedAt: db_message.CreatedAt,
-		BuyerSent: db_message.BuyerSent,
-		Message:   db_message.Message,
-	}
-}
-
-func (u *BuyerServer) PostBuyerMessage(ctx context.Context, req *PostBuyerMessageRequest) (
-	resp *PostBuyerMessageResponse, err error) {
-
-	var message *database.Message
-	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
-
-		pk_row, err := tx.Get_Vendor_Pk_By_Id(ctx,
-			database.Vendor_Id(req.VendorId))
-		if err != nil {
-			return err
-		}
-
-		message, err = tx.Create_Message(ctx,
-			database.Message_VendorPk(pk_row.Pk),
-			database.Message_BuyerPk(req.BuyerPk),
-			database.Message_Id(uuid.NewV4().String()),
-			database.Message_BuyerSent(true),
-			database.Message_Message(req.Message),
-			database.Message_Create_Fields{},
-		)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &PostBuyerMessageResponse{Message: MessageFromDB(message)}, nil
 }
 
 //hashPassword takes a string, creates a hash using that string and returns the hash in a string

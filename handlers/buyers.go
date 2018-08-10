@@ -184,52 +184,29 @@ func (u *buyerHandler) buyerProducts(w http.ResponseWriter, req *http.Request) {
 	w.Write(b)
 }
 
-func (u *buyerHandler) sendBuyerMessage(w http.ResponseWriter, req *http.Request) {
+func (u *buyerHandler) getPagedBuyerConversation(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	if req.Method == "GET" {
-
 		buyer_pk := GetBuyerPk(req.Context())
 
-		messages, err := u.buyerServer.GetBuyerMessages(ctx, &server.GetBuyerMessageRequest{
-			BuyerPk: buyer_pk})
-		if err != nil {
-			http.Error(w, "server error", http.StatusInternalServerError)
-			return
-		}
-
-		b, err := json.Marshal(messages)
-		if err != nil {
-			http.Error(w, "server error", http.StatusInternalServerError)
-			return
-		}
-
-		h := w.Header()
-		h.Set("Content-Type", "application/json")
-		w.Write(b)
-
-	}
-
-	if req.Method == "POST" {
-
 		decoder := json.NewDecoder(req.Body)
-		var message_req server.PostBuyerMessageRequest
-		err := decoder.Decode(&message_req)
+		var conversation_req server.PagedBuyerConversationsReq
+		err := decoder.Decode(&conversation_req)
 		if err != nil {
 			http.Error(w, "unable to parse json", http.StatusInternalServerError)
 			return
 		}
 
-		buyer_pk := GetBuyerPk(ctx)
-		message_req.BuyerPk = buyer_pk
+		conversation_req.BuyerPk = buyer_pk
 
-		message_resp, err := u.buyerServer.PostBuyerMessage(ctx, &message_req)
+		conversations, err := u.buyerServer.GetPagedBuyerConversations(ctx, &conversation_req)
 		if err != nil {
-			http.Error(w, "server error", http.StatusInternalServerError)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
 
-		b, err := json.Marshal(message_resp)
+		b, err := json.Marshal(conversations)
 		if err != nil {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
@@ -238,8 +215,12 @@ func (u *buyerHandler) sendBuyerMessage(w http.ResponseWriter, req *http.Request
 		h := w.Header()
 		h.Set("Content-Type", "application/json")
 		w.Write(b)
+
+		return
+
 	}
 
 	http.Error(w, "method not allowed", http.StatusBadRequest)
 	return
+
 }
