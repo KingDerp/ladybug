@@ -18,6 +18,47 @@ var (
 	defaultPassword = "Password8%"
 )
 
+func TestGetBuyerMessagesByConversationId(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
+
+	//set up
+	ctx := context.Background()
+	vendor := test.createVendorInDB(ctx)
+	buyer := test.createBuyer(ctx, &createBuyerInDBOptions{})
+	conversation := test.createConversationInDB(buyer, vendor)
+	test.createMessageHistory(ctx, conversation, 210)
+
+	//offset 0
+	req := &PagedBuyerMessagesByConversationIdReq{
+		Offset:         int64(0),
+		ConversationId: conversation.Id,
+	}
+	resp, err := test.BuyerServer.PagedBuyerMessagesByConversationId(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, len(resp.Messages), messageRequestLimit)
+	require.Equal(t, resp.Offset, int64(messageRequestLimit))
+
+	//subsequent request with new offset
+	req.Offset = resp.Offset
+	resp, err = test.BuyerServer.PagedBuyerMessagesByConversationId(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, len(resp.Messages), messageRequestLimit)
+	require.Equal(t, resp.Offset, int64(messageRequestLimit*2))
+
+	//offset exceeds number of messages in history
+	req.Offset = int64(1000)
+	resp, err = test.BuyerServer.PagedBuyerMessagesByConversationId(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, len(resp.Messages), 0) //no messages because offest exceeds message history
+
+	//offset result is less than messageRequestLimit
+	req.Offset = 200
+	resp, err = test.BuyerServer.PagedBuyerMessagesByConversationId(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, len(resp.Messages), 10)
+}
+
 func TestGetBuyerConversationsUnread(t *testing.T) {
 	test := newTest(t)
 	defer test.tearDown()
@@ -454,7 +495,6 @@ func (s *serverTest) createConversationInDB(buyer *database.Buyer, vendor *datab
 		database.Conversation_BuyerPk(buyer.Pk),
 		database.Conversation_BuyerUnread(false),
 		database.Conversation_VendorUnread(false),
-		database.Conversation_NumMessages(0),
 		database.Conversation_Id(uuid.NewV4().String()),
 	)
 	require.NoError(s.t, err)
@@ -477,6 +517,29 @@ type newMessageOptions struct {
 	Id          string
 	BuyerSent   bool
 	Description string
+}
+
+//createMessageHistory takes context, conversation model and a number. The number inicates the
+//number of messages that should be created between the buyer and vendor. The message history will
+//be back and forth with the buyer initiating the contact
+func (s *serverTest) createMessageHistory(ctx context.Context, conversation *database.Conversation,
+	num int) {
+	for i := 0; i < num; i += 2 {
+		s.createDefaultBuyerMessageToVendor(ctx, conversation)
+		s.createDefaultVendorMessageToBuyer(ctx, conversation)
+	}
+}
+
+func (s *serverTest) createDefaultVendorMessageToBuyer(ctx context.Context,
+	conversation *database.Conversation) *database.Message {
+
+	return s.createNewMessage(ctx, conversation, nil)
+}
+
+func (s *serverTest) createDefaultBuyerMessageToVendor(ctx context.Context,
+	conversation *database.Conversation) *database.Message {
+
+	return s.createNewMessage(ctx, conversation, &newMessageOptions{BuyerSent: true})
 }
 
 func (s *serverTest) createNewMessage(ctx context.Context, conversation *database.Conversation,
@@ -502,14 +565,10 @@ func (s *serverTest) createNewMessage(ctx context.Context, conversation *databas
 		database.Message_BuyerSent(options.BuyerSent),
 		database.Message_Description(options.Description),
 		database.Message_ConversationPk(conversation.Pk),
-		database.Message_Number(conversation.NumMessages+1),
 	)
 	require.NoError(s.t, err)
 
-	updates := database.Conversation_Update_Fields{
-		NumMessages: database.Conversation_NumMessages(conversation.NumMessages + 1),
-	}
-
+	updates := database.Conversation_Update_Fields{}
 	if options.BuyerSent == false {
 		updates.BuyerUnread = database.Conversation_BuyerUnread(true)
 	} else {

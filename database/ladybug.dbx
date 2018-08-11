@@ -361,12 +361,16 @@ model conversation (
     field buyer_pk        int64
     field buyer_unread    bool ( updatable )
     field vendor_unread   bool ( updatable )
-    field num_messages    int64 ( updatable )
     field id              text
     field created_at      timestamp ( autoinsert )
 )
 
 create conversation()
+
+read one (
+    select conversation
+    where conversation.id = ?
+)
 
 read scalar (
     select conversation
@@ -406,6 +410,10 @@ update conversation (
     noreturn
 )
 
+update conversation (
+    where conversation.pk = ?
+)
+
 // -------------------------------------------------------------- //
 model message (
 	key    pk
@@ -417,7 +425,6 @@ model message (
     field buyer_sent      bool
     field description     text
     field conversation_pk int64
-    field number          int64
 )
 
 create message()
@@ -429,17 +436,13 @@ read one (
     where message.id = ?
 )
 
+read all (
+    select message
+    where message.conversation_pk = ?
+)
+
 read limitoffset (
     select message
     where message.conversation_pk = ?
     orderby desc message.created_at
-)
-
-read all (
-    select message.buyer_sent message.description
-    join message.conversation_pk = conversation.pk
-    join conversation.vendor_pk = vendor.pk
-    where message.conversation_pk = ?
-    where vendor.pk = ?
-    orderby desc message.number
 )

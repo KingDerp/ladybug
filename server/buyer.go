@@ -14,6 +14,7 @@ import (
 const (
 	productRequestLimit      = 25
 	conversationRequestLimit = 20
+	messageRequestLimit      = 25
 )
 
 type BuyerServer struct {

@@ -48,7 +48,6 @@ CREATE TABLE conversations (
 	buyer_pk bigint NOT NULL,
 	buyer_unread boolean NOT NULL,
 	vendor_unread boolean NOT NULL,
-	num_messages bigint NOT NULL,
 	id text NOT NULL,
 	created_at timestamp with time zone NOT NULL,
 	PRIMARY KEY ( pk ),
@@ -71,7 +70,6 @@ CREATE TABLE messages (
 	buyer_sent boolean NOT NULL,
 	description text NOT NULL,
 	conversation_pk bigint NOT NULL,
-	number bigint NOT NULL,
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
 );

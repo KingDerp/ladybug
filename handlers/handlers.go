@@ -31,9 +31,11 @@ func NewHandler(db *database.DB) *Handler {
 	mux.Handle("/products", http.HandlerFunc(u.buyerProducts))
 	//TODO make a /products/category endpoint that lets you search products by category
 	mux.Handle("/buyer/conversations",
-		a.CheckBuyerSessionCookie(http.HandlerFunc(u.getPagedBuyerConversation)))
+		a.CheckBuyerSessionCookie(http.HandlerFunc(u.getPagedBuyerConversations)))
 	mux.Handle("/buyer/conversations/unread",
 		a.CheckBuyerSessionCookie(http.HandlerFunc(u.getBuyerConversationsUnread)))
+	mux.Handle("/buyer/conversation",
+		a.CheckBuyerSessionCookie(http.HandlerFunc(u.pagedBuyerMessagesByConversationId)))
 	//mux.Handle("/buyer/messages", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
 	//mux.Handle("/buyer/messages/unread", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
 
