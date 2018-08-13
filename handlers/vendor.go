@@ -188,3 +188,77 @@ func (v *vendorHandler) getVendorConversationsUnread(w http.ResponseWriter, req 
 	http.Error(w, "method not allowed", http.StatusBadRequest)
 	return
 }
+
+func (v *vendorHandler) pagedVendorMessagesByConversationId(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	if req.Method == "GET" {
+
+		decoder := json.NewDecoder(req.Body)
+		var conversation_req server.PagedVendorMessagesByConversationIdReq
+		err := decoder.Decode(&conversation_req)
+		if err != nil {
+			http.Error(w, "unable to parse json", http.StatusInternalServerError)
+			return
+		}
+
+		messages, err := v.vendorServer.PagedVendorMessagesByConversationId(ctx, &conversation_req)
+		if err != nil {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(messages)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+
+		return
+
+	}
+
+	http.Error(w, "method not allowed", http.StatusBadRequest)
+	return
+}
+
+func (v *vendorHandler) postVendorMessageToConversation(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	if req.Method == "POST" {
+		decoder := json.NewDecoder(req.Body)
+		var conversation_req server.PostVendorMessageToConversationReq
+		err := decoder.Decode(&conversation_req)
+		if err != nil {
+			http.Error(w, "unable to parse json", http.StatusInternalServerError)
+			return
+		}
+
+		conversation_req.VendorPk = GetVendorPk(req.Context())
+
+		messages, err := v.vendorServer.PostVendorMessageToConversation(ctx, &conversation_req)
+		if err != nil {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(messages)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+
+		return
+	}
+
+	http.Error(w, "method not allowed", http.StatusBadRequest)
+	return
+}

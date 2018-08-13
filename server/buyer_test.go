@@ -40,6 +40,13 @@ func TestIncrementConversationCount(t *testing.T) {
 
 	conversation := test.getConversation(ctx, vendor.Pk, buyer.Pk)
 	require.Equal(t, conversation.MessageCount, int64(1))
+
+	resp, err = test.BuyerServer.PostBuyerMessageToConversation(ctx, req)
+	require.NoError(t, err)
+
+	conversation = test.getConversation(ctx, vendor.Pk, buyer.Pk)
+	require.Equal(t, conversation.MessageCount, int64(2))
+	require.Equal(t, resp.Message.MessageNumber, int64(2))
 }
 
 func TestGetBuyerMessagesByConversationId(t *testing.T) {

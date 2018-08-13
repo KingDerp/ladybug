@@ -2,37 +2,36 @@ package server
 
 import (
 	"context"
-
 	"ladybug/database"
 
 	uuid "github.com/satori/go.uuid"
 )
 
-type PostBuyerMessageToConversationReq struct {
-	BuyerPk            int64
-	VendorId           string `json:"vendorId"`
+type PostVendorMessageToConversationReq struct {
+	VendorPk           int64
+	BuyerId            string `json:"vendorId"`
 	MessageDescription string `json:"messageDescription"`
 }
 
-type PostBuyerMessageToConversationResp struct {
+type PostVendorMessageToConversationResp struct {
 	Message *Message `json:"messages"`
 }
 
-func (u *BuyerServer) PostBuyerMessageToConversation(ctx context.Context,
-	req *PostBuyerMessageToConversationReq) (resp *PostBuyerMessageToConversationResp, err error) {
+func (v *VendorServer) PostVendorMessageToConversation(ctx context.Context,
+	req *PostVendorMessageToConversationReq) (resp *PostVendorMessageToConversationResp, err error) {
 
 	var message *database.Message
-	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+	err = v.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 
-		vendor_pk_field, err := tx.Get_Vendor_Pk_By_Id(ctx,
-			database.Vendor_Id(req.VendorId))
+		buyer_pk_field, err := tx.Get_Buyer_Pk_By_Id(ctx,
+			database.Buyer_Id(req.BuyerId))
 		if err != nil {
 			return err
 		}
 
 		conversation, err := tx.Find_Conversation_By_VendorPk_And_BuyerPk(ctx,
-			database.Conversation_VendorPk(vendor_pk_field.Pk),
-			database.Conversation_BuyerPk(req.BuyerPk))
+			database.Conversation_VendorPk(req.VendorPk),
+			database.Conversation_BuyerPk(buyer_pk_field.Pk))
 		if err != nil {
 			return err
 		}
@@ -40,10 +39,10 @@ func (u *BuyerServer) PostBuyerMessageToConversation(ctx context.Context,
 		//if buyer and vendor have not had a conversation before create new conversation
 		if conversation == nil {
 			conversation, err = tx.Create_Conversation(ctx,
-				database.Conversation_VendorPk(vendor_pk_field.Pk),
-				database.Conversation_BuyerPk(req.BuyerPk),
-				database.Conversation_BuyerUnread(false),
-				database.Conversation_VendorUnread(true),
+				database.Conversation_VendorPk(req.VendorPk),
+				database.Conversation_BuyerPk(buyer_pk_field.Pk),
+				database.Conversation_BuyerUnread(true),
+				database.Conversation_VendorUnread(false),
 				database.Conversation_MessageCount(1),
 				database.Conversation_Id(uuid.NewV4().String()))
 			if err != nil {
@@ -52,7 +51,7 @@ func (u *BuyerServer) PostBuyerMessageToConversation(ctx context.Context,
 		} else {
 			conversation_updates := database.Conversation_Update_Fields{
 				MessageCount: database.Conversation_MessageCount(conversation.MessageCount + 1),
-				VendorUnread: database.Conversation_VendorUnread(true),
+				BuyerUnread:  database.Conversation_BuyerUnread(true),
 			}
 
 			conversation, err = tx.Update_Conversation_By_Pk(ctx,
@@ -65,7 +64,7 @@ func (u *BuyerServer) PostBuyerMessageToConversation(ctx context.Context,
 
 		message, err = tx.Create_Message(ctx,
 			database.Message_Id(uuid.NewV4().String()),
-			database.Message_BuyerSent(true),
+			database.Message_BuyerSent(false),
 			database.Message_Description(req.MessageDescription),
 			database.Message_ConversationPk(conversation.Pk),
 			database.Message_ConversationNumber(conversation.MessageCount))
@@ -79,26 +78,26 @@ func (u *BuyerServer) PostBuyerMessageToConversation(ctx context.Context,
 		return nil, err
 	}
 
-	return &PostBuyerMessageToConversationResp{
+	return &PostVendorMessageToConversationResp{
 		Message: MessageFromDB(message),
 	}, nil
 }
 
-type PagedBuyerMessagesByConversationIdReq struct {
+type PagedVendorMessagesByConversationIdReq struct {
 	Offset         int64  `json:"offset"`
 	ConversationId string `json:"conversationId"`
 }
 
-type PagedBuyerMessagesByConversationIdResp struct {
+type PagedVendorMessagesByConversationIdResp struct {
 	Offset   int64      `json:"offset"`
 	Messages []*Message `json:"messages"`
 }
 
-func (u *BuyerServer) PagedBuyerMessagesByConversationId(ctx context.Context,
-	req *PagedBuyerMessagesByConversationIdReq) (resp *PagedBuyerMessagesByConversationIdResp, err error) {
+func (v *VendorServer) PagedVendorMessagesByConversationId(ctx context.Context,
+	req *PagedVendorMessagesByConversationIdReq) (resp *PagedVendorMessagesByConversationIdResp, err error) {
 
 	var messages []*database.Message
-	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+	err = v.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 		conversation, err := tx.Get_Conversation_By_Id(ctx, database.Conversation_Id(req.ConversationId))
 		if err != nil {
 			return err
@@ -118,7 +117,7 @@ func (u *BuyerServer) PagedBuyerMessagesByConversationId(ctx context.Context,
 
 	offset := req.Offset + messageRequestLimit
 
-	return &PagedBuyerMessagesByConversationIdResp{
+	return &PagedVendorMessagesByConversationIdResp{
 		Messages: MessagesFromDB(messages),
 		Offset:   offset,
 	}, nil

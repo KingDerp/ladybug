@@ -37,7 +37,7 @@ func NewHandler(db *database.DB) *Handler {
 	mux.Handle("/buyer/conversation",
 		a.CheckBuyerSessionCookie(http.HandlerFunc(u.pagedBuyerMessagesByConversationId)))
 	mux.Handle("/buyer/conversation/message",
-		a.CheckBuyerSessionCookie(http.HandlerFunc(u.pagedBuyerMessagesByConversationId)))
+		a.CheckBuyerSessionCookie(http.HandlerFunc(u.postBuyerMessageToConversation)))
 	//mux.Handle("/buyer/messages", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
 	//mux.Handle("/buyer/messages/unread", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
 
@@ -49,6 +49,8 @@ func NewHandler(db *database.DB) *Handler {
 	mux.Handle("/vendor/product", a.CheckVendorSessionCookie(http.HandlerFunc(v.vendorProduct)))
 	mux.Handle("/vendor/conversations", a.CheckVendorSessionCookie(http.HandlerFunc(v.getPagedVendorConversations)))
 	mux.Handle("/vendor/conversations/unread", a.CheckVendorSessionCookie(http.HandlerFunc(v.getVendorConversationsUnread)))
+	mux.Handle("/vendor/conversations/", a.CheckVendorSessionCookie(http.HandlerFunc(v.pagedVendorMessagesByConversationId)))
+	mux.Handle("/vendor/conversations/message", a.CheckVendorSessionCookie(http.HandlerFunc(v.postVendorMessageToConversation)))
 	//mux.Handle("/vendor/messages", a.CheckVendorSessionCookie(http.HandlerFunc(v.vendorMessage)))
 
 	return &Handler{Handler: mux}
