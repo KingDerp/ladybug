@@ -359,13 +359,20 @@ model conversation (
     field pk              serial64
     field vendor_pk       int64
     field buyer_pk        int64
-    field buyer_unread    bool ( updatable )
-    field vendor_unread   bool ( updatable )
+    field buyer_unread    bool  ( updatable )
+    field vendor_unread   bool  ( updatable )
+    field message_count   int64 ( updatable )
     field id              text
     field created_at      timestamp ( autoinsert )
 )
 
 create conversation()
+
+read one (
+    select conversation
+    where conversation.vendor_pk = ?
+    where conversation.buyer_pk = ?
+)
 
 read one (
     select conversation
@@ -406,12 +413,12 @@ read paged (
 )
 
 update conversation (
-    where conversation.pk = ?    
-    noreturn
+    where conversation.pk = ?
 )
 
 update conversation (
-    where conversation.pk = ?
+    where conversation.pk = ?    
+    noreturn
 )
 
 // -------------------------------------------------------------- //
@@ -419,12 +426,13 @@ model message (
 	key    pk
 	unique id
 
-    field pk              serial64
-    field id              text
-    field created_at      timestamp ( autoinsert )
-    field buyer_sent      bool
-    field description     text
-    field conversation_pk int64
+    field pk                  serial64
+    field id                  text
+    field created_at          timestamp ( autoinsert )
+    field buyer_sent          bool
+    field description         text
+    field conversation_pk     int64
+    field conversation_number int64
 )
 
 create message()

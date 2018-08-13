@@ -36,6 +36,8 @@ func NewHandler(db *database.DB) *Handler {
 		a.CheckBuyerSessionCookie(http.HandlerFunc(u.getBuyerConversationsUnread)))
 	mux.Handle("/buyer/conversation",
 		a.CheckBuyerSessionCookie(http.HandlerFunc(u.pagedBuyerMessagesByConversationId)))
+	mux.Handle("/buyer/conversation/message",
+		a.CheckBuyerSessionCookie(http.HandlerFunc(u.pagedBuyerMessagesByConversationId)))
 	//mux.Handle("/buyer/messages", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
 	//mux.Handle("/buyer/messages/unread", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
 

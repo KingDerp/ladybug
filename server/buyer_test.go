@@ -18,6 +18,30 @@ var (
 	defaultPassword = "Password8%"
 )
 
+func TestIncrementConversationCount(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
+
+	//set up
+	ctx := context.Background()
+	vendor := test.createVendorInDB(ctx)
+	buyer := test.createBuyer(ctx, &createBuyerInDBOptions{})
+
+	//first contact from buyer
+	req := &PostBuyerMessageToConversationReq{
+		BuyerPk:            buyer.Pk,
+		VendorId:           vendor.Id,
+		MessageDescription: "Your Mother was a hamster",
+	}
+	resp, err := test.BuyerServer.PostBuyerMessageToConversation(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, resp.Message.Description, req.MessageDescription)
+	require.True(t, resp.Message.BuyerSent)
+
+	conversation := test.getConversation(ctx, vendor.Pk, buyer.Pk)
+	require.Equal(t, conversation.MessageCount, int64(1))
+}
+
 func TestGetBuyerMessagesByConversationId(t *testing.T) {
 	test := newTest(t)
 	defer test.tearDown()
@@ -489,12 +513,23 @@ func randFloat(min, max float32) float32 {
 	return min + rand.Float32()*(max-min)
 }
 
+func (s *serverTest) getConversation(ctx context.Context, vendor_pk, buyer_pk int64) (
+	conversation *database.Conversation) {
+	conversation, err := s.db.Get_Conversation_By_VendorPk_And_BuyerPk(ctx,
+		database.Conversation_VendorPk(vendor_pk),
+		database.Conversation_BuyerPk(buyer_pk))
+	require.NoError(s.t, err)
+
+	return conversation
+}
+
 func (s *serverTest) createConversationInDB(buyer *database.Buyer, vendor *database.Vendor) *database.Conversation {
 	c, err := s.db.Create_Conversation(context.Background(),
 		database.Conversation_VendorPk(vendor.Pk),
 		database.Conversation_BuyerPk(buyer.Pk),
 		database.Conversation_BuyerUnread(false),
 		database.Conversation_VendorUnread(false),
+		database.Conversation_MessageCount(0),
 		database.Conversation_Id(uuid.NewV4().String()),
 	)
 	require.NoError(s.t, err)
@@ -565,10 +600,13 @@ func (s *serverTest) createNewMessage(ctx context.Context, conversation *databas
 		database.Message_BuyerSent(options.BuyerSent),
 		database.Message_Description(options.Description),
 		database.Message_ConversationPk(conversation.Pk),
+		database.Message_ConversationNumber(conversation.MessageCount+1),
 	)
 	require.NoError(s.t, err)
 
-	updates := database.Conversation_Update_Fields{}
+	updates := database.Conversation_Update_Fields{
+		MessageCount: database.Conversation_MessageCount(conversation.MessageCount + 1),
+	}
 	if options.BuyerSent == false {
 		updates.BuyerUnread = database.Conversation_BuyerUnread(true)
 	} else {

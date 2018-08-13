@@ -265,13 +265,13 @@ func (u *buyerHandler) pagedBuyerMessagesByConversationId(w http.ResponseWriter,
 			return
 		}
 
-		conversations, err := u.buyerServer.PagedBuyerMessagesByConversationId(ctx, &conversation_req)
+		messages, err := u.buyerServer.PagedBuyerMessagesByConversationId(ctx, &conversation_req)
 		if err != nil {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
 
-		b, err := json.Marshal(conversations)
+		b, err := json.Marshal(messages)
 		if err != nil {
 			http.Error(w, "server error", http.StatusInternalServerError)
 			return
@@ -283,6 +283,43 @@ func (u *buyerHandler) pagedBuyerMessagesByConversationId(w http.ResponseWriter,
 
 		return
 
+	}
+
+	http.Error(w, "method not allowed", http.StatusBadRequest)
+	return
+}
+
+func (u *buyerHandler) postBuyerMessageToConversation(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	if req.Method == "POST" {
+		decoder := json.NewDecoder(req.Body)
+		var conversation_req server.PostBuyerMessageToConversationReq
+		err := decoder.Decode(&conversation_req)
+		if err != nil {
+			http.Error(w, "unable to parse json", http.StatusInternalServerError)
+			return
+		}
+
+		conversation_req.BuyerPk = GetBuyerPk(req.Context())
+
+		messages, err := u.buyerServer.PostBuyerMessageToConversation(ctx, &conversation_req)
+		if err != nil {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(messages)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+
+		return
 	}
 
 	http.Error(w, "method not allowed", http.StatusBadRequest)
