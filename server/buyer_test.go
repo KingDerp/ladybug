@@ -18,6 +18,38 @@ var (
 	defaultPassword = "Password8%"
 )
 
+func TestUpdateProdcutReview(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
+
+	ctx := context.Background()
+	vendor := test.createVendorInDB(ctx)
+	buyer := test.createBuyer(ctx, &createBuyerInDBOptions{})
+	product := test.createActiveAndApprovedProductInStock(ctx, vendor.Pk)
+
+	req := &UpdateProductReviewReq{
+		BuyerPk:     buyer.Pk,
+		ProductId:   product.Id,
+		Stars:       5,
+		Description: "vendor reached out to me and gave me a discount on shipping!",
+	}
+
+	//hasn't left a review yet
+	resp, err := test.BuyerServer.UpdateProductReview(ctx, req)
+	require.EqualError(t, err, "You have not left a review yet")
+
+	//succesfully updated
+	review := test.createDefaultProductReview(ctx, buyer.Pk, product.Pk)
+	resp, err = test.BuyerServer.UpdateProductReview(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, resp.UpdateReviewMessage, "Your review has been updated.")
+
+	updated_review, err := test.db.Get_ProductReview_By_Pk(ctx, database.ProductReview_Pk(review.Pk))
+	require.NoError(t, err)
+	require.Equal(t, review.Rating, 3)
+	require.Equal(t, updated_review.Rating, 5)
+}
+
 func TestProductReview(t *testing.T) {
 	test := newTest(t)
 	defer test.tearDown()

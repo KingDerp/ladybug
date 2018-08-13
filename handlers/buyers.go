@@ -331,16 +331,16 @@ func (u *buyerHandler) buyerProductTrial(w http.ResponseWriter, req *http.Reques
 
 	if req.Method == "POST" {
 		decoder := json.NewDecoder(req.Body)
-		var req server.StartProductTrialReq
-		err := decoder.Decode(&req)
+		var trial_req server.StartProductTrialReq
+		err := decoder.Decode(&trial_req)
 		if err != nil {
 			http.Error(w, "unable to parse json", http.StatusInternalServerError)
 			return
 		}
 
-		req.BuyerPk = GetBuyerPk(req.Context())
+		trial_req.BuyerPk = GetBuyerPk(req.Context())
 
-		resp, err := u.buyerServer.StartProductTrial(ctx, req)
+		resp, err := u.buyerServer.StartProductTrial(ctx, &trial_req)
 		if err != nil {
 			http.Error(w, "unable to parse json", http.StatusInternalServerError)
 			return
@@ -363,22 +363,52 @@ func (u *buyerHandler) buyerProductTrial(w http.ResponseWriter, req *http.Reques
 	return
 }
 
-func (u *buyerHandler) buyerProductReview(w http.ResponseWriter, req *http.reqest) {
+func (u *buyerHandler) buyerProductReview(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 
 	if req.Method == "POST" {
 		decoder := json.NewDecoder(req.Body)
-		var req server.ProductReviewReq
-		err := decoder.Decode(&req)
+		var review_req server.ProductReviewReq
+		err := decoder.Decode(&review_req)
 		if err != nil {
 			http.Error(w, "unable to parse json", http.StatusInternalServerError)
 			return
 		}
 
-		req.BuyerPk = GetBuyerPk(req.Context())
+		review_req.BuyerPk = GetBuyerPk(req.Context())
 
-		resp, err := u.buyerServer.ReviewProduct(ctx, req)
+		resp, err := u.buyerServer.ReviewProduct(ctx, &review_req)
+		if err != nil {
+			http.Error(w, "unable to parse json", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(resp)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+
+		return
+	}
+
+	if req.Method == "PUT" {
+		decoder := json.NewDecoder(req.Body)
+		var review_req server.UpdateProductReviewReq
+		err := decoder.Decode(&review_req)
+		if err != nil {
+			http.Error(w, "unable to parse json", http.StatusInternalServerError)
+			return
+		}
+
+		review_req.BuyerPk = GetBuyerPk(req.Context())
+
+		resp, err := u.buyerServer.UpdateProductReview(ctx, &review_req)
 		if err != nil {
 			http.Error(w, "unable to parse json", http.StatusInternalServerError)
 			return

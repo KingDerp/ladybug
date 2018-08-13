@@ -4612,6 +4612,71 @@ func (obj *postgresImpl) Has_ProductReview_By_Product_Id_And_ProductReview_Buyer
 
 }
 
+func (obj *postgresImpl) Find_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx context.Context,
+	product_id Product_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field) (
+	product_review *ProductReview, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT product_reviews.pk, product_reviews.id, product_reviews.buyer_pk, product_reviews.product_pk, product_reviews.rating, product_reviews.description FROM products  JOIN product_reviews ON products.pk = product_reviews.product_pk WHERE products.id = ? AND product_reviews.buyer_pk = ? LIMIT 2")
+
+	var __values []interface{}
+	__values = append(__values, product_id.value(), product_review_buyer_pk.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	__rows, err := obj.driver.Query(__stmt, __values...)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	defer __rows.Close()
+
+	if !__rows.Next() {
+		if err := __rows.Err(); err != nil {
+			return nil, obj.makeErr(err)
+		}
+		return nil, nil
+	}
+
+	product_review = &ProductReview{}
+	err = __rows.Scan(&product_review.Pk, &product_review.Id, &product_review.BuyerPk, &product_review.ProductPk, &product_review.Rating, &product_review.Description)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+
+	if __rows.Next() {
+		return nil, tooManyRows("ProductReview_By_Product_Id_And_ProductReview_BuyerPk")
+	}
+
+	if err := __rows.Err(); err != nil {
+		return nil, obj.makeErr(err)
+	}
+
+	return product_review, nil
+
+}
+
+func (obj *postgresImpl) Get_ProductReview_By_Pk(ctx context.Context,
+	product_review_pk ProductReview_Pk_Field) (
+	product_review *ProductReview, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT product_reviews.pk, product_reviews.id, product_reviews.buyer_pk, product_reviews.product_pk, product_reviews.rating, product_reviews.description FROM product_reviews WHERE product_reviews.pk = ?")
+
+	var __values []interface{}
+	__values = append(__values, product_review_pk.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	product_review = &ProductReview{}
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&product_review.Pk, &product_review.Id, &product_review.BuyerPk, &product_review.ProductPk, &product_review.Rating, &product_review.Description)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return product_review, nil
+
+}
+
 func (obj *postgresImpl) Has_PurchasedProduct_By_BuyerPk(ctx context.Context,
 	purchased_product_buyer_pk PurchasedProduct_BuyerPk_Field) (
 	has bool, err error) {
@@ -5396,6 +5461,47 @@ func (obj *postgresImpl) Update_Product_By_Pk(ctx context.Context,
 		return nil, obj.makeErr(err)
 	}
 	return product, nil
+}
+
+func (obj *postgresImpl) UpdateNoReturn_ProductReview_By_Pk(ctx context.Context,
+	product_review_pk ProductReview_Pk_Field,
+	update ProductReview_Update_Fields) (
+	err error) {
+	var __sets = &__sqlbundle_Hole{}
+
+	var __embed_stmt = __sqlbundle_Literals{Join: "", SQLs: []__sqlbundle_SQL{__sqlbundle_Literal("UPDATE product_reviews SET "), __sets, __sqlbundle_Literal(" WHERE product_reviews.pk = ?")}}
+
+	__sets_sql := __sqlbundle_Literals{Join: ", "}
+	var __values []interface{}
+	var __args []interface{}
+
+	if update.Rating._set {
+		__values = append(__values, update.Rating.value())
+		__sets_sql.SQLs = append(__sets_sql.SQLs, __sqlbundle_Literal("rating = ?"))
+	}
+
+	if update.Description._set {
+		__values = append(__values, update.Description.value())
+		__sets_sql.SQLs = append(__sets_sql.SQLs, __sqlbundle_Literal("description = ?"))
+	}
+
+	if len(__sets_sql.SQLs) == 0 {
+		return emptyUpdate()
+	}
+
+	__args = append(__args, product_review_pk.value())
+
+	__values = append(__values, __args...)
+	__sets.SQL = __sets_sql
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	_, err = obj.driver.Exec(__stmt, __values...)
+	if err != nil {
+		return obj.makeErr(err)
+	}
+	return nil
 }
 
 func (obj *postgresImpl) Update_Conversation_By_Pk(ctx context.Context,
@@ -7147,6 +7253,71 @@ func (obj *sqlite3Impl) Has_ProductReview_By_Product_Id_And_ProductReview_BuyerP
 
 }
 
+func (obj *sqlite3Impl) Find_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx context.Context,
+	product_id Product_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field) (
+	product_review *ProductReview, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT product_reviews.pk, product_reviews.id, product_reviews.buyer_pk, product_reviews.product_pk, product_reviews.rating, product_reviews.description FROM products  JOIN product_reviews ON products.pk = product_reviews.product_pk WHERE products.id = ? AND product_reviews.buyer_pk = ? LIMIT 2")
+
+	var __values []interface{}
+	__values = append(__values, product_id.value(), product_review_buyer_pk.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	__rows, err := obj.driver.Query(__stmt, __values...)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	defer __rows.Close()
+
+	if !__rows.Next() {
+		if err := __rows.Err(); err != nil {
+			return nil, obj.makeErr(err)
+		}
+		return nil, nil
+	}
+
+	product_review = &ProductReview{}
+	err = __rows.Scan(&product_review.Pk, &product_review.Id, &product_review.BuyerPk, &product_review.ProductPk, &product_review.Rating, &product_review.Description)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+
+	if __rows.Next() {
+		return nil, tooManyRows("ProductReview_By_Product_Id_And_ProductReview_BuyerPk")
+	}
+
+	if err := __rows.Err(); err != nil {
+		return nil, obj.makeErr(err)
+	}
+
+	return product_review, nil
+
+}
+
+func (obj *sqlite3Impl) Get_ProductReview_By_Pk(ctx context.Context,
+	product_review_pk ProductReview_Pk_Field) (
+	product_review *ProductReview, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT product_reviews.pk, product_reviews.id, product_reviews.buyer_pk, product_reviews.product_pk, product_reviews.rating, product_reviews.description FROM product_reviews WHERE product_reviews.pk = ?")
+
+	var __values []interface{}
+	__values = append(__values, product_review_pk.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	product_review = &ProductReview{}
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&product_review.Pk, &product_review.Id, &product_review.BuyerPk, &product_review.ProductPk, &product_review.Rating, &product_review.Description)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return product_review, nil
+
+}
+
 func (obj *sqlite3Impl) Has_PurchasedProduct_By_BuyerPk(ctx context.Context,
 	purchased_product_buyer_pk PurchasedProduct_BuyerPk_Field) (
 	has bool, err error) {
@@ -7971,6 +8142,47 @@ func (obj *sqlite3Impl) Update_Product_By_Pk(ctx context.Context,
 		return nil, obj.makeErr(err)
 	}
 	return product, nil
+}
+
+func (obj *sqlite3Impl) UpdateNoReturn_ProductReview_By_Pk(ctx context.Context,
+	product_review_pk ProductReview_Pk_Field,
+	update ProductReview_Update_Fields) (
+	err error) {
+	var __sets = &__sqlbundle_Hole{}
+
+	var __embed_stmt = __sqlbundle_Literals{Join: "", SQLs: []__sqlbundle_SQL{__sqlbundle_Literal("UPDATE product_reviews SET "), __sets, __sqlbundle_Literal(" WHERE product_reviews.pk = ?")}}
+
+	__sets_sql := __sqlbundle_Literals{Join: ", "}
+	var __values []interface{}
+	var __args []interface{}
+
+	if update.Rating._set {
+		__values = append(__values, update.Rating.value())
+		__sets_sql.SQLs = append(__sets_sql.SQLs, __sqlbundle_Literal("rating = ?"))
+	}
+
+	if update.Description._set {
+		__values = append(__values, update.Description.value())
+		__sets_sql.SQLs = append(__sets_sql.SQLs, __sqlbundle_Literal("description = ?"))
+	}
+
+	if len(__sets_sql.SQLs) == 0 {
+		return emptyUpdate()
+	}
+
+	__args = append(__args, product_review_pk.value())
+
+	__values = append(__values, __args...)
+	__sets.SQL = __sets_sql
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	_, err = obj.driver.Exec(__stmt, __values...)
+	if err != nil {
+		return obj.makeErr(err)
+	}
+	return nil
 }
 
 func (obj *sqlite3Impl) Update_Conversation_By_Pk(ctx context.Context,
@@ -9186,6 +9398,17 @@ func (rx *Rx) Find_Conversation_By_VendorPk_And_BuyerPk(ctx context.Context,
 	return tx.Find_Conversation_By_VendorPk_And_BuyerPk(ctx, conversation_vendor_pk, conversation_buyer_pk)
 }
 
+func (rx *Rx) Find_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx context.Context,
+	product_id Product_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field) (
+	product_review *ProductReview, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Find_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx, product_id, product_review_buyer_pk)
+}
+
 func (rx *Rx) First_BuyerSession_By_BuyerPk(ctx context.Context,
 	buyer_session_buyer_pk BuyerSession_BuyerPk_Field) (
 	buyer_session *BuyerSession, err error) {
@@ -9275,6 +9498,16 @@ func (rx *Rx) Get_Message_By_Id(ctx context.Context,
 		return
 	}
 	return tx.Get_Message_By_Id(ctx, message_id)
+}
+
+func (rx *Rx) Get_ProductReview_By_Pk(ctx context.Context,
+	product_review_pk ProductReview_Pk_Field) (
+	product_review *ProductReview, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Get_ProductReview_By_Pk(ctx, product_review_pk)
 }
 
 func (rx *Rx) Get_Product_By_Id(ctx context.Context,
@@ -9412,6 +9645,17 @@ func (rx *Rx) UpdateNoReturn_Conversation_By_Pk(ctx context.Context,
 		return
 	}
 	return tx.UpdateNoReturn_Conversation_By_Pk(ctx, conversation_pk, update)
+}
+
+func (rx *Rx) UpdateNoReturn_ProductReview_By_Pk(ctx context.Context,
+	product_review_pk ProductReview_Pk_Field,
+	update ProductReview_Update_Fields) (
+	err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.UpdateNoReturn_ProductReview_By_Pk(ctx, product_review_pk, update)
 }
 
 func (rx *Rx) Update_Address_By_Pk(ctx context.Context,
@@ -9764,6 +10008,11 @@ type Methods interface {
 		conversation_buyer_pk Conversation_BuyerPk_Field) (
 		conversation *Conversation, err error)
 
+	Find_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx context.Context,
+		product_id Product_Id_Field,
+		product_review_buyer_pk ProductReview_BuyerPk_Field) (
+		product_review *ProductReview, err error)
+
 	First_BuyerSession_By_BuyerPk(ctx context.Context,
 		buyer_session_buyer_pk BuyerSession_BuyerPk_Field) (
 		buyer_session *BuyerSession, err error)
@@ -9800,6 +10049,10 @@ type Methods interface {
 	Get_Message_By_Id(ctx context.Context,
 		message_id Message_Id_Field) (
 		message *Message, err error)
+
+	Get_ProductReview_By_Pk(ctx context.Context,
+		product_review_pk ProductReview_Pk_Field) (
+		product_review *ProductReview, err error)
 
 	Get_Product_By_Id(ctx context.Context,
 		product_id Product_Id_Field) (
@@ -9858,6 +10111,11 @@ type Methods interface {
 	UpdateNoReturn_Conversation_By_Pk(ctx context.Context,
 		conversation_pk Conversation_Pk_Field,
 		update Conversation_Update_Fields) (
+		err error)
+
+	UpdateNoReturn_ProductReview_By_Pk(ctx context.Context,
+		product_review_pk ProductReview_Pk_Field,
+		update ProductReview_Update_Fields) (
 		err error)
 
 	Update_Address_By_Pk(ctx context.Context,

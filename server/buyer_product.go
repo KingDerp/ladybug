@@ -8,6 +8,50 @@ import (
 	"github.com/zeebo/errs"
 )
 
+type UpdateProductReviewReq struct {
+	BuyerPk     int64
+	ProductId   string `json:"productId"`
+	Stars       int    `json:"stars"`
+	Description string `json:"description"`
+}
+
+type UpdateProductReviewResp struct {
+	UpdateReviewMessage string `json:"updateReviewMessage"`
+}
+
+func (u *BuyerServer) UpdateProductReview(ctx context.Context, req *UpdateProductReviewReq) (
+	resp *UpdateProductReviewResp, err error) {
+
+	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
+		product_review, err := tx.Find_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx,
+			database.Product_Id(req.ProductId),
+			database.ProductReview_BuyerPk(req.BuyerPk))
+		if err != nil {
+			return err
+		}
+
+		if product_review == nil {
+			return errs.New("You have not left a review yet")
+		}
+
+		err = tx.UpdateNoReturn_ProductReview_By_Pk(ctx,
+			database.ProductReview_Pk(product_review.ProductPk),
+			database.ProductReview_Update_Fields{
+				Rating:      database.ProductReview_Rating(req.Stars),
+				Description: database.ProductReview_Description(req.Description)})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &UpdateProductReviewResp{UpdateReviewMessage: "Your review has been updated."}, nil
+}
+
 type ProductReviewReq struct {
 	BuyerPk     int64
 	ProductId   string `json:"productId"`

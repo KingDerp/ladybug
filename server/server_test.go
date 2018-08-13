@@ -101,6 +101,37 @@ func (h *serverTest) createVendorsInDB(ctx context.Context, n int) []*database.V
 	return vendors
 }
 
+type createProductReviewOptions struct {
+	Stars       int
+	Description string
+}
+
+func (p *createProductReviewOptions) setDefaultProductReviewOptions() {
+	if p.Description == "" {
+		p.Description = "meh"
+	}
+}
+
+func (h *serverTest) createProductReview(ctx context.Context, buyer_pk, product_pk int64,
+	options *createProductReviewOptions) (review *database.ProductReview) {
+	options.setDefaultProductReviewOptions()
+
+	r, err := h.db.Create_ProductReview(ctx,
+		database.ProductReview_Id(uuid.NewV4().String()),
+		database.ProductReview_BuyerPk(buyer_pk),
+		database.ProductReview_ProductPk(product_pk),
+		database.ProductReview_Rating(options.Stars),
+		database.ProductReview_Description(options.Description),
+	)
+	require.NoError(h.t, err)
+
+	return r
+}
+
+func (h *serverTest) createDefaultProductReview(ctx context.Context, buyer_pk, product_pk int64) *database.ProductReview {
+	return h.createProductReview(ctx, buyer_pk, product_pk, &createProductReviewOptions{Stars: 3})
+}
+
 type productOptions struct {
 	Price           float32
 	Discount        float32

@@ -327,6 +327,22 @@ read has (
     where product_review.buyer_pk = ?
 )
 
+read scalar (
+    select product_review
+    join product.pk = product_review.product_pk
+    where product.id = ?
+    where product_review.buyer_pk = ?
+)
+
+read one (
+    select product_review
+    where product_review.pk = ?
+)
+
+update product_review (
+    where product_review.pk = ?
+    noreturn
+)
 
 // -------------------------------------------------------------- //
 model trial_product (
