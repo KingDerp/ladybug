@@ -159,3 +159,32 @@ func (v *vendorHandler) getPagedVendorConversations(w http.ResponseWriter, req *
 	http.Error(w, "method not allowed", http.StatusBadRequest)
 	return
 }
+
+func (v *vendorHandler) getVendorConversationsUnread(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	if req.Method == "GET" {
+		req := &server.VendorConversationsUnreadReq{VendorPk: GetVendorPk(req.Context())}
+
+		conversations, err := v.vendorServer.GetVendorCoversationsUnread(ctx, req)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(conversations)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+
+		return
+	}
+
+	http.Error(w, "method not allowed", http.StatusBadRequest)
+	return
+}

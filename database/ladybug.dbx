@@ -387,7 +387,7 @@ read scalar (
 
 read all (
     select conversation
-    where conversation.buyer_pk = ?
+    where conversation.vendor_pk = ?
     where conversation.vendor_unread = true
 )
 
@@ -416,7 +416,6 @@ read paged (
     select conversation
     where conversation.vendor_pk = ?
 )
-
 
 update conversation (
     where conversation.pk = ?

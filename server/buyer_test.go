@@ -631,6 +631,15 @@ func (s *serverTest) createNewMessage(ctx context.Context, conversation *databas
 	return message
 }
 
+func (s *serverTest) createDefaultMessagesFromBuyer(ctx context.Context,
+	conversations []*database.Conversation) {
+
+	messages := []*database.Message{}
+	for _, c := range conversations {
+		messages = append(messages, s.createNewMessage(ctx, c, &newMessageOptions{BuyerSent: true}))
+	}
+}
+
 func (s *serverTest) createDefaultMessagesFromVendor(ctx context.Context,
 	conversations []*database.Conversation) {
 

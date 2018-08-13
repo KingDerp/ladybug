@@ -48,6 +48,7 @@ func NewHandler(db *database.DB) *Handler {
 	mux.Handle("/vendor/sign-up", http.HandlerFunc(v.vendorSignUp))
 	mux.Handle("/vendor/product", a.CheckVendorSessionCookie(http.HandlerFunc(v.vendorProduct)))
 	mux.Handle("/vendor/conversations", a.CheckVendorSessionCookie(http.HandlerFunc(v.getPagedVendorConversations)))
+	mux.Handle("/vendor/conversations/unread", a.CheckVendorSessionCookie(http.HandlerFunc(v.getVendorConversationsUnread)))
 	//mux.Handle("/vendor/messages", a.CheckVendorSessionCookie(http.HandlerFunc(v.vendorMessage)))
 
 	return &Handler{Handler: mux}
