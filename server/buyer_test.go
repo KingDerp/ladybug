@@ -18,6 +18,27 @@ var (
 	defaultPassword = "Password8%"
 )
 
+func TestStartTrialProduct(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
+
+	ctx := context.Background()
+	vendor := test.createVendorInDB(ctx)
+	buyer := test.createBuyer(ctx, &createBuyerInDBOptions{})
+	products := test.createActiveAndApprovedProductsInStock(ctx, 1, vendor.Pk)
+
+	req := &StartProductTrialReq{
+		BuyerPk:   buyer.Pk,
+		VendorId:  vendor.Id,
+		ProductId: products[0].Id,
+	}
+
+	resp, err := test.BuyerServer.StartProductTrial(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, resp.TrialProduct.TrialPrice, products[0].Price)
+	require.Equal(t, resp.TrialProduct.TrialEndDate, trialExpirationInUnixTime(products[0].CreatedAt))
+}
+
 func TestIncrementConversationCount(t *testing.T) {
 	test := newTest(t)
 	defer test.tearDown()

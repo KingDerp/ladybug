@@ -361,6 +361,16 @@ CREATE TABLE products (
 	product_active boolean NOT NULL,
 	num_in_stock integer NOT NULL,
 	description text NOT NULL,
+	rating real NOT NULL,
+	PRIMARY KEY ( pk ),
+	UNIQUE ( id )
+);
+CREATE TABLE product_reviews (
+	pk bigserial NOT NULL,
+	id text NOT NULL,
+	buyer_pk bigint NOT NULL,
+	rating real NOT NULL,
+	description text NOT NULL,
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
 );
@@ -589,6 +599,16 @@ CREATE TABLE products (
 	ladybug_approved INTEGER NOT NULL,
 	product_active INTEGER NOT NULL,
 	num_in_stock INTEGER NOT NULL,
+	description TEXT NOT NULL,
+	rating REAL NOT NULL,
+	PRIMARY KEY ( pk ),
+	UNIQUE ( id )
+);
+CREATE TABLE product_reviews (
+	pk INTEGER NOT NULL,
+	id TEXT NOT NULL,
+	buyer_pk INTEGER NOT NULL,
+	rating REAL NOT NULL,
 	description TEXT NOT NULL,
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
@@ -1684,6 +1704,7 @@ type Product struct {
 	ProductActive   bool
 	NumInStock      int
 	Description     string
+	Rating          float32
 }
 
 func (Product) _Table() string { return "products" }
@@ -1698,6 +1719,7 @@ type Product_Update_Fields struct {
 	ProductActive   Product_ProductActive_Field
 	NumInStock      Product_NumInStock_Field
 	Description     Product_Description_Field
+	Rating          Product_Rating_Field
 }
 
 type Product_Pk_Field struct {
@@ -1933,6 +1955,129 @@ func (f Product_Description_Field) value() interface{} {
 }
 
 func (Product_Description_Field) _Column() string { return "description" }
+
+type Product_Rating_Field struct {
+	_set   bool
+	_value float32
+}
+
+func Product_Rating(v float32) Product_Rating_Field {
+	return Product_Rating_Field{_set: true, _value: v}
+}
+
+func (f Product_Rating_Field) value() interface{} {
+	if !f._set {
+		return nil
+	}
+	return f._value
+}
+
+func (Product_Rating_Field) _Column() string { return "rating" }
+
+type ProductReview struct {
+	Pk          int64
+	Id          string
+	BuyerPk     int64
+	Rating      float32
+	Description string
+}
+
+func (ProductReview) _Table() string { return "product_reviews" }
+
+type ProductReview_Update_Fields struct {
+	Rating      ProductReview_Rating_Field
+	Description ProductReview_Description_Field
+}
+
+type ProductReview_Pk_Field struct {
+	_set   bool
+	_value int64
+}
+
+func ProductReview_Pk(v int64) ProductReview_Pk_Field {
+	return ProductReview_Pk_Field{_set: true, _value: v}
+}
+
+func (f ProductReview_Pk_Field) value() interface{} {
+	if !f._set {
+		return nil
+	}
+	return f._value
+}
+
+func (ProductReview_Pk_Field) _Column() string { return "pk" }
+
+type ProductReview_Id_Field struct {
+	_set   bool
+	_value string
+}
+
+func ProductReview_Id(v string) ProductReview_Id_Field {
+	return ProductReview_Id_Field{_set: true, _value: v}
+}
+
+func (f ProductReview_Id_Field) value() interface{} {
+	if !f._set {
+		return nil
+	}
+	return f._value
+}
+
+func (ProductReview_Id_Field) _Column() string { return "id" }
+
+type ProductReview_BuyerPk_Field struct {
+	_set   bool
+	_value int64
+}
+
+func ProductReview_BuyerPk(v int64) ProductReview_BuyerPk_Field {
+	return ProductReview_BuyerPk_Field{_set: true, _value: v}
+}
+
+func (f ProductReview_BuyerPk_Field) value() interface{} {
+	if !f._set {
+		return nil
+	}
+	return f._value
+}
+
+func (ProductReview_BuyerPk_Field) _Column() string { return "buyer_pk" }
+
+type ProductReview_Rating_Field struct {
+	_set   bool
+	_value float32
+}
+
+func ProductReview_Rating(v float32) ProductReview_Rating_Field {
+	return ProductReview_Rating_Field{_set: true, _value: v}
+}
+
+func (f ProductReview_Rating_Field) value() interface{} {
+	if !f._set {
+		return nil
+	}
+	return f._value
+}
+
+func (ProductReview_Rating_Field) _Column() string { return "rating" }
+
+type ProductReview_Description_Field struct {
+	_set   bool
+	_value string
+}
+
+func ProductReview_Description(v string) ProductReview_Description_Field {
+	return ProductReview_Description_Field{_set: true, _value: v}
+}
+
+func (f ProductReview_Description_Field) value() interface{} {
+	if !f._set {
+		return nil
+	}
+	return f._value
+}
+
+func (ProductReview_Description_Field) _Column() string { return "description" }
 
 type PurchasedProduct struct {
 	Pk            int64
@@ -3006,6 +3151,11 @@ type BuyerPk_Row struct {
 	BuyerPk int64
 }
 
+type Pk_Price_Row struct {
+	Pk    int64
+	Price float32
+}
+
 type Pk_Row struct {
 	Pk int64
 }
@@ -3524,7 +3674,8 @@ func (obj *postgresImpl) Create_Product(ctx context.Context,
 	product_ladybug_approved Product_LadybugApproved_Field,
 	product_product_active Product_ProductActive_Field,
 	product_num_in_stock Product_NumInStock_Field,
-	product_description Product_Description_Field) (
+	product_description Product_Description_Field,
+	product_rating Product_Rating_Field) (
 	product *Product, err error) {
 
 	__now := obj.db.Hooks.Now().UTC()
@@ -3540,14 +3691,15 @@ func (obj *postgresImpl) Create_Product(ctx context.Context,
 	__product_active_val := product_product_active.value()
 	__num_in_stock_val := product_num_in_stock.value()
 	__description_val := product_description.value()
+	__rating_val := product_rating.value()
 
-	var __embed_stmt = __sqlbundle_Literal("INSERT INTO products ( id, vendor_pk, created_at, price, discount, discount_active, sku, google_bucket_id, ladybug_approved, product_active, num_in_stock, description ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ) RETURNING products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description")
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO products ( id, vendor_pk, created_at, price, discount, discount_active, sku, google_bucket_id, ladybug_approved, product_active, num_in_stock, description, rating ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ) RETURNING products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating")
 
 	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
-	obj.logStmt(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val)
+	obj.logStmt(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val, __rating_val)
 
 	product = &Product{}
-	err = obj.driver.QueryRow(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description)
+	err = obj.driver.QueryRow(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val, __rating_val).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating)
 	if err != nil {
 		return nil, obj.makeErr(err)
 	}
@@ -3566,7 +3718,8 @@ func (obj *postgresImpl) CreateNoReturn_Product(ctx context.Context,
 	product_ladybug_approved Product_LadybugApproved_Field,
 	product_product_active Product_ProductActive_Field,
 	product_num_in_stock Product_NumInStock_Field,
-	product_description Product_Description_Field) (
+	product_description Product_Description_Field,
+	product_rating Product_Rating_Field) (
 	err error) {
 
 	__now := obj.db.Hooks.Now().UTC()
@@ -3582,17 +3735,50 @@ func (obj *postgresImpl) CreateNoReturn_Product(ctx context.Context,
 	__product_active_val := product_product_active.value()
 	__num_in_stock_val := product_num_in_stock.value()
 	__description_val := product_description.value()
+	__rating_val := product_rating.value()
 
-	var __embed_stmt = __sqlbundle_Literal("INSERT INTO products ( id, vendor_pk, created_at, price, discount, discount_active, sku, google_bucket_id, ladybug_approved, product_active, num_in_stock, description ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )")
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO products ( id, vendor_pk, created_at, price, discount, discount_active, sku, google_bucket_id, ladybug_approved, product_active, num_in_stock, description, rating ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )")
 
 	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
-	obj.logStmt(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val)
+	obj.logStmt(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val, __rating_val)
 
-	_, err = obj.driver.Exec(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val)
+	_, err = obj.driver.Exec(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val, __rating_val)
 	if err != nil {
 		return obj.makeErr(err)
 	}
 	return nil
+
+}
+
+func (obj *postgresImpl) Create_TrialProduct(ctx context.Context,
+	trial_product_id TrialProduct_Id_Field,
+	trial_product_vendor_pk TrialProduct_VendorPk_Field,
+	trial_product_buyer_pk TrialProduct_BuyerPk_Field,
+	trial_product_product_pk TrialProduct_ProductPk_Field,
+	trial_product_trial_price TrialProduct_TrialPrice_Field,
+	trial_product_is_returned TrialProduct_IsReturned_Field) (
+	trial_product *TrialProduct, err error) {
+
+	__now := obj.db.Hooks.Now().UTC()
+	__id_val := trial_product_id.value()
+	__vendor_pk_val := trial_product_vendor_pk.value()
+	__buyer_pk_val := trial_product_buyer_pk.value()
+	__product_pk_val := trial_product_product_pk.value()
+	__created_at_val := __now
+	__trial_price_val := trial_product_trial_price.value()
+	__is_returned_val := trial_product_is_returned.value()
+
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO trial_products ( id, vendor_pk, buyer_pk, product_pk, created_at, trial_price, is_returned ) VALUES ( ?, ?, ?, ?, ?, ?, ? ) RETURNING trial_products.pk, trial_products.id, trial_products.vendor_pk, trial_products.buyer_pk, trial_products.product_pk, trial_products.created_at, trial_products.trial_price, trial_products.is_returned")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __id_val, __vendor_pk_val, __buyer_pk_val, __product_pk_val, __created_at_val, __trial_price_val, __is_returned_val)
+
+	trial_product = &TrialProduct{}
+	err = obj.driver.QueryRow(__stmt, __id_val, __vendor_pk_val, __buyer_pk_val, __product_pk_val, __created_at_val, __trial_price_val, __is_returned_val).Scan(&trial_product.Pk, &trial_product.Id, &trial_product.VendorPk, &trial_product.BuyerPk, &trial_product.ProductPk, &trial_product.CreatedAt, &trial_product.TrialPrice, &trial_product.IsReturned)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return trial_product, nil
 
 }
 
@@ -4156,11 +4342,32 @@ func (obj *postgresImpl) Get_Vendor_Pk_By_Id(ctx context.Context,
 
 }
 
+func (obj *postgresImpl) Get_Product_Pk_Product_Price_By_Id(ctx context.Context,
+	product_id Product_Id_Field) (
+	row *Pk_Price_Row, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.price FROM products WHERE products.id = ?")
+
+	var __values []interface{}
+	__values = append(__values, product_id.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	row = &Pk_Price_Row{}
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&row.Pk, &row.Price)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return row, nil
+
+}
+
 func (obj *postgresImpl) Get_Product_By_Id(ctx context.Context,
 	product_id Product_Id_Field) (
 	product *Product, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description FROM products WHERE products.id = ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating FROM products WHERE products.id = ?")
 
 	var __values []interface{}
 	__values = append(__values, product_id.value())
@@ -4169,7 +4376,7 @@ func (obj *postgresImpl) Get_Product_By_Id(ctx context.Context,
 	obj.logStmt(__stmt, __values...)
 
 	product = &Product{}
-	err = obj.driver.QueryRow(__stmt, __values...).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description)
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating)
 	if err != nil {
 		return nil, obj.makeErr(err)
 	}
@@ -4185,7 +4392,7 @@ func (obj *postgresImpl) Paged_Product_By_ProductActive_Equal_True_And_LadybugAp
 		ctoken = "0"
 	}
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.pk FROM products WHERE products.product_active = true AND products.ladybug_approved = true AND products.num_in_stock != 0 AND products.pk > ? ORDER BY products.pk LIMIT ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating, products.pk FROM products WHERE products.product_active = true AND products.ladybug_approved = true AND products.num_in_stock != 0 AND products.pk > ? ORDER BY products.pk LIMIT ?")
 
 	var __values []interface{}
 	__values = append(__values)
@@ -4204,7 +4411,7 @@ func (obj *postgresImpl) Paged_Product_By_ProductActive_Equal_True_And_LadybugAp
 	__pk := int64(0)
 	for __rows.Next() {
 		product := &Product{}
-		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &__pk)
+		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating, &__pk)
 		if err != nil {
 			return nil, "", obj.makeErr(err)
 		}
@@ -4229,7 +4436,7 @@ func (obj *postgresImpl) Paged_Product_By_ProductActive_Equal_True_And_LadybugAp
 func (obj *postgresImpl) All_Product_By_ProductActive_Equal_True(ctx context.Context) (
 	rows []*Product, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description FROM products WHERE products.product_active = true")
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating FROM products WHERE products.product_active = true")
 
 	var __values []interface{}
 	__values = append(__values)
@@ -4245,7 +4452,7 @@ func (obj *postgresImpl) All_Product_By_ProductActive_Equal_True(ctx context.Con
 
 	for __rows.Next() {
 		product := &Product{}
-		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description)
+		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating)
 		if err != nil {
 			return nil, obj.makeErr(err)
 		}
@@ -4261,7 +4468,7 @@ func (obj *postgresImpl) All_Product_By_ProductActive_Equal_True(ctx context.Con
 func (obj *postgresImpl) All_Product_By_ProductActive_Equal_False_And_LadybugApproved_Equal_True(ctx context.Context) (
 	rows []*Product, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description FROM products WHERE products.product_active = false AND products.ladybug_approved = true")
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating FROM products WHERE products.product_active = false AND products.ladybug_approved = true")
 
 	var __values []interface{}
 	__values = append(__values)
@@ -4277,7 +4484,7 @@ func (obj *postgresImpl) All_Product_By_ProductActive_Equal_False_And_LadybugApp
 
 	for __rows.Next() {
 		product := &Product{}
-		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description)
+		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating)
 		if err != nil {
 			return nil, obj.makeErr(err)
 		}
@@ -4997,7 +5204,7 @@ func (obj *postgresImpl) Update_Product_By_Pk(ctx context.Context,
 	product *Product, err error) {
 	var __sets = &__sqlbundle_Hole{}
 
-	var __embed_stmt = __sqlbundle_Literals{Join: "", SQLs: []__sqlbundle_SQL{__sqlbundle_Literal("UPDATE products SET "), __sets, __sqlbundle_Literal(" WHERE products.pk = ? RETURNING products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description")}}
+	var __embed_stmt = __sqlbundle_Literals{Join: "", SQLs: []__sqlbundle_SQL{__sqlbundle_Literal("UPDATE products SET "), __sets, __sqlbundle_Literal(" WHERE products.pk = ? RETURNING products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating")}}
 
 	__sets_sql := __sqlbundle_Literals{Join: ", "}
 	var __values []interface{}
@@ -5048,6 +5255,11 @@ func (obj *postgresImpl) Update_Product_By_Pk(ctx context.Context,
 		__sets_sql.SQLs = append(__sets_sql.SQLs, __sqlbundle_Literal("description = ?"))
 	}
 
+	if update.Rating._set {
+		__values = append(__values, update.Rating.value())
+		__sets_sql.SQLs = append(__sets_sql.SQLs, __sqlbundle_Literal("rating = ?"))
+	}
+
 	if len(__sets_sql.SQLs) == 0 {
 		return nil, emptyUpdate()
 	}
@@ -5061,7 +5273,7 @@ func (obj *postgresImpl) Update_Product_By_Pk(ctx context.Context,
 	obj.logStmt(__stmt, __values...)
 
 	product = &Product{}
-	err = obj.driver.QueryRow(__stmt, __values...).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description)
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -5241,6 +5453,16 @@ func (obj *postgresImpl) deleteAll(ctx context.Context) (count int64, err error)
 	}
 	count += __count
 	__res, err = obj.driver.Exec("DELETE FROM purchased_products;")
+	if err != nil {
+		return 0, obj.makeErr(err)
+	}
+
+	__count, err = __res.RowsAffected()
+	if err != nil {
+		return 0, obj.makeErr(err)
+	}
+	count += __count
+	__res, err = obj.driver.Exec("DELETE FROM product_reviews;")
 	if err != nil {
 		return 0, obj.makeErr(err)
 	}
@@ -5872,7 +6094,8 @@ func (obj *sqlite3Impl) Create_Product(ctx context.Context,
 	product_ladybug_approved Product_LadybugApproved_Field,
 	product_product_active Product_ProductActive_Field,
 	product_num_in_stock Product_NumInStock_Field,
-	product_description Product_Description_Field) (
+	product_description Product_Description_Field,
+	product_rating Product_Rating_Field) (
 	product *Product, err error) {
 
 	__now := obj.db.Hooks.Now().UTC()
@@ -5888,13 +6111,14 @@ func (obj *sqlite3Impl) Create_Product(ctx context.Context,
 	__product_active_val := product_product_active.value()
 	__num_in_stock_val := product_num_in_stock.value()
 	__description_val := product_description.value()
+	__rating_val := product_rating.value()
 
-	var __embed_stmt = __sqlbundle_Literal("INSERT INTO products ( id, vendor_pk, created_at, price, discount, discount_active, sku, google_bucket_id, ladybug_approved, product_active, num_in_stock, description ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )")
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO products ( id, vendor_pk, created_at, price, discount, discount_active, sku, google_bucket_id, ladybug_approved, product_active, num_in_stock, description, rating ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )")
 
 	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
-	obj.logStmt(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val)
+	obj.logStmt(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val, __rating_val)
 
-	__res, err := obj.driver.Exec(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val)
+	__res, err := obj.driver.Exec(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val, __rating_val)
 	if err != nil {
 		return nil, obj.makeErr(err)
 	}
@@ -5917,7 +6141,8 @@ func (obj *sqlite3Impl) CreateNoReturn_Product(ctx context.Context,
 	product_ladybug_approved Product_LadybugApproved_Field,
 	product_product_active Product_ProductActive_Field,
 	product_num_in_stock Product_NumInStock_Field,
-	product_description Product_Description_Field) (
+	product_description Product_Description_Field,
+	product_rating Product_Rating_Field) (
 	err error) {
 
 	__now := obj.db.Hooks.Now().UTC()
@@ -5933,17 +6158,53 @@ func (obj *sqlite3Impl) CreateNoReturn_Product(ctx context.Context,
 	__product_active_val := product_product_active.value()
 	__num_in_stock_val := product_num_in_stock.value()
 	__description_val := product_description.value()
+	__rating_val := product_rating.value()
 
-	var __embed_stmt = __sqlbundle_Literal("INSERT INTO products ( id, vendor_pk, created_at, price, discount, discount_active, sku, google_bucket_id, ladybug_approved, product_active, num_in_stock, description ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )")
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO products ( id, vendor_pk, created_at, price, discount, discount_active, sku, google_bucket_id, ladybug_approved, product_active, num_in_stock, description, rating ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )")
 
 	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
-	obj.logStmt(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val)
+	obj.logStmt(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val, __rating_val)
 
-	_, err = obj.driver.Exec(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val)
+	_, err = obj.driver.Exec(__stmt, __id_val, __vendor_pk_val, __created_at_val, __price_val, __discount_val, __discount_active_val, __sku_val, __google_bucket_id_val, __ladybug_approved_val, __product_active_val, __num_in_stock_val, __description_val, __rating_val)
 	if err != nil {
 		return obj.makeErr(err)
 	}
 	return nil
+
+}
+
+func (obj *sqlite3Impl) Create_TrialProduct(ctx context.Context,
+	trial_product_id TrialProduct_Id_Field,
+	trial_product_vendor_pk TrialProduct_VendorPk_Field,
+	trial_product_buyer_pk TrialProduct_BuyerPk_Field,
+	trial_product_product_pk TrialProduct_ProductPk_Field,
+	trial_product_trial_price TrialProduct_TrialPrice_Field,
+	trial_product_is_returned TrialProduct_IsReturned_Field) (
+	trial_product *TrialProduct, err error) {
+
+	__now := obj.db.Hooks.Now().UTC()
+	__id_val := trial_product_id.value()
+	__vendor_pk_val := trial_product_vendor_pk.value()
+	__buyer_pk_val := trial_product_buyer_pk.value()
+	__product_pk_val := trial_product_product_pk.value()
+	__created_at_val := __now
+	__trial_price_val := trial_product_trial_price.value()
+	__is_returned_val := trial_product_is_returned.value()
+
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO trial_products ( id, vendor_pk, buyer_pk, product_pk, created_at, trial_price, is_returned ) VALUES ( ?, ?, ?, ?, ?, ?, ? )")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __id_val, __vendor_pk_val, __buyer_pk_val, __product_pk_val, __created_at_val, __trial_price_val, __is_returned_val)
+
+	__res, err := obj.driver.Exec(__stmt, __id_val, __vendor_pk_val, __buyer_pk_val, __product_pk_val, __created_at_val, __trial_price_val, __is_returned_val)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	__pk, err := __res.LastInsertId()
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return obj.getLastTrialProduct(ctx, __pk)
 
 }
 
@@ -6519,11 +6780,32 @@ func (obj *sqlite3Impl) Get_Vendor_Pk_By_Id(ctx context.Context,
 
 }
 
+func (obj *sqlite3Impl) Get_Product_Pk_Product_Price_By_Id(ctx context.Context,
+	product_id Product_Id_Field) (
+	row *Pk_Price_Row, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.price FROM products WHERE products.id = ?")
+
+	var __values []interface{}
+	__values = append(__values, product_id.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	row = &Pk_Price_Row{}
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&row.Pk, &row.Price)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return row, nil
+
+}
+
 func (obj *sqlite3Impl) Get_Product_By_Id(ctx context.Context,
 	product_id Product_Id_Field) (
 	product *Product, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description FROM products WHERE products.id = ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating FROM products WHERE products.id = ?")
 
 	var __values []interface{}
 	__values = append(__values, product_id.value())
@@ -6532,7 +6814,7 @@ func (obj *sqlite3Impl) Get_Product_By_Id(ctx context.Context,
 	obj.logStmt(__stmt, __values...)
 
 	product = &Product{}
-	err = obj.driver.QueryRow(__stmt, __values...).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description)
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating)
 	if err != nil {
 		return nil, obj.makeErr(err)
 	}
@@ -6548,7 +6830,7 @@ func (obj *sqlite3Impl) Paged_Product_By_ProductActive_Equal_True_And_LadybugApp
 		ctoken = "0"
 	}
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.pk FROM products WHERE products.product_active = 1 AND products.ladybug_approved = 1 AND products.num_in_stock != 0 AND products.pk > ? ORDER BY products.pk LIMIT ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating, products.pk FROM products WHERE products.product_active = 1 AND products.ladybug_approved = 1 AND products.num_in_stock != 0 AND products.pk > ? ORDER BY products.pk LIMIT ?")
 
 	var __values []interface{}
 	__values = append(__values)
@@ -6567,7 +6849,7 @@ func (obj *sqlite3Impl) Paged_Product_By_ProductActive_Equal_True_And_LadybugApp
 	__pk := int64(0)
 	for __rows.Next() {
 		product := &Product{}
-		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &__pk)
+		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating, &__pk)
 		if err != nil {
 			return nil, "", obj.makeErr(err)
 		}
@@ -6592,7 +6874,7 @@ func (obj *sqlite3Impl) Paged_Product_By_ProductActive_Equal_True_And_LadybugApp
 func (obj *sqlite3Impl) All_Product_By_ProductActive_Equal_True(ctx context.Context) (
 	rows []*Product, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description FROM products WHERE products.product_active = 1")
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating FROM products WHERE products.product_active = 1")
 
 	var __values []interface{}
 	__values = append(__values)
@@ -6608,7 +6890,7 @@ func (obj *sqlite3Impl) All_Product_By_ProductActive_Equal_True(ctx context.Cont
 
 	for __rows.Next() {
 		product := &Product{}
-		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description)
+		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating)
 		if err != nil {
 			return nil, obj.makeErr(err)
 		}
@@ -6624,7 +6906,7 @@ func (obj *sqlite3Impl) All_Product_By_ProductActive_Equal_True(ctx context.Cont
 func (obj *sqlite3Impl) All_Product_By_ProductActive_Equal_False_And_LadybugApproved_Equal_True(ctx context.Context) (
 	rows []*Product, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description FROM products WHERE products.product_active = 0 AND products.ladybug_approved = 1")
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating FROM products WHERE products.product_active = 0 AND products.ladybug_approved = 1")
 
 	var __values []interface{}
 	__values = append(__values)
@@ -6640,7 +6922,7 @@ func (obj *sqlite3Impl) All_Product_By_ProductActive_Equal_False_And_LadybugAppr
 
 	for __rows.Next() {
 		product := &Product{}
-		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description)
+		err = __rows.Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating)
 		if err != nil {
 			return nil, obj.makeErr(err)
 		}
@@ -7441,6 +7723,11 @@ func (obj *sqlite3Impl) Update_Product_By_Pk(ctx context.Context,
 		__sets_sql.SQLs = append(__sets_sql.SQLs, __sqlbundle_Literal("description = ?"))
 	}
 
+	if update.Rating._set {
+		__values = append(__values, update.Rating.value())
+		__sets_sql.SQLs = append(__sets_sql.SQLs, __sqlbundle_Literal("rating = ?"))
+	}
+
 	if len(__sets_sql.SQLs) == 0 {
 		return nil, emptyUpdate()
 	}
@@ -7459,12 +7746,12 @@ func (obj *sqlite3Impl) Update_Product_By_Pk(ctx context.Context,
 		return nil, obj.makeErr(err)
 	}
 
-	var __embed_stmt_get = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description FROM products WHERE products.pk = ?")
+	var __embed_stmt_get = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating FROM products WHERE products.pk = ?")
 
 	var __stmt_get = __sqlbundle_Render(obj.dialect, __embed_stmt_get)
 	obj.logStmt("(IMPLIED) "+__stmt_get, __args...)
 
-	err = obj.driver.QueryRow(__stmt_get, __args...).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description)
+	err = obj.driver.QueryRow(__stmt_get, __args...).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -7746,17 +8033,35 @@ func (obj *sqlite3Impl) getLastProduct(ctx context.Context,
 	pk int64) (
 	product *Product, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description FROM products WHERE _rowid_ = ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT products.pk, products.id, products.vendor_pk, products.created_at, products.price, products.discount, products.discount_active, products.sku, products.google_bucket_id, products.ladybug_approved, products.product_active, products.num_in_stock, products.description, products.rating FROM products WHERE _rowid_ = ?")
 
 	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
 	obj.logStmt(__stmt, pk)
 
 	product = &Product{}
-	err = obj.driver.QueryRow(__stmt, pk).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description)
+	err = obj.driver.QueryRow(__stmt, pk).Scan(&product.Pk, &product.Id, &product.VendorPk, &product.CreatedAt, &product.Price, &product.Discount, &product.DiscountActive, &product.Sku, &product.GoogleBucketId, &product.LadybugApproved, &product.ProductActive, &product.NumInStock, &product.Description, &product.Rating)
 	if err != nil {
 		return nil, obj.makeErr(err)
 	}
 	return product, nil
+
+}
+
+func (obj *sqlite3Impl) getLastTrialProduct(ctx context.Context,
+	pk int64) (
+	trial_product *TrialProduct, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT trial_products.pk, trial_products.id, trial_products.vendor_pk, trial_products.buyer_pk, trial_products.product_pk, trial_products.created_at, trial_products.trial_price, trial_products.is_returned FROM trial_products WHERE _rowid_ = ?")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, pk)
+
+	trial_product = &TrialProduct{}
+	err = obj.driver.QueryRow(__stmt, pk).Scan(&trial_product.Pk, &trial_product.Id, &trial_product.VendorPk, &trial_product.BuyerPk, &trial_product.ProductPk, &trial_product.CreatedAt, &trial_product.TrialPrice, &trial_product.IsReturned)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return trial_product, nil
 
 }
 
@@ -7911,6 +8216,16 @@ func (obj *sqlite3Impl) deleteAll(ctx context.Context) (count int64, err error) 
 	}
 	count += __count
 	__res, err = obj.driver.Exec("DELETE FROM purchased_products;")
+	if err != nil {
+		return 0, obj.makeErr(err)
+	}
+
+	__count, err = __res.RowsAffected()
+	if err != nil {
+		return 0, obj.makeErr(err)
+	}
+	count += __count
+	__res, err = obj.driver.Exec("DELETE FROM product_reviews;")
 	if err != nil {
 		return 0, obj.makeErr(err)
 	}
@@ -8260,13 +8575,14 @@ func (rx *Rx) CreateNoReturn_Product(ctx context.Context,
 	product_ladybug_approved Product_LadybugApproved_Field,
 	product_product_active Product_ProductActive_Field,
 	product_num_in_stock Product_NumInStock_Field,
-	product_description Product_Description_Field) (
+	product_description Product_Description_Field,
+	product_rating Product_Rating_Field) (
 	err error) {
 	var tx *Tx
 	if tx, err = rx.getTx(ctx); err != nil {
 		return
 	}
-	return tx.CreateNoReturn_Product(ctx, product_id, product_vendor_pk, product_price, product_discount, product_discount_active, product_sku, product_google_bucket_id, product_ladybug_approved, product_product_active, product_num_in_stock, product_description)
+	return tx.CreateNoReturn_Product(ctx, product_id, product_vendor_pk, product_price, product_discount, product_discount_active, product_sku, product_google_bucket_id, product_ladybug_approved, product_product_active, product_num_in_stock, product_description, product_rating)
 
 }
 
@@ -8467,13 +8783,14 @@ func (rx *Rx) Create_Product(ctx context.Context,
 	product_ladybug_approved Product_LadybugApproved_Field,
 	product_product_active Product_ProductActive_Field,
 	product_num_in_stock Product_NumInStock_Field,
-	product_description Product_Description_Field) (
+	product_description Product_Description_Field,
+	product_rating Product_Rating_Field) (
 	product *Product, err error) {
 	var tx *Tx
 	if tx, err = rx.getTx(ctx); err != nil {
 		return
 	}
-	return tx.Create_Product(ctx, product_id, product_vendor_pk, product_price, product_discount, product_discount_active, product_sku, product_google_bucket_id, product_ladybug_approved, product_product_active, product_num_in_stock, product_description)
+	return tx.Create_Product(ctx, product_id, product_vendor_pk, product_price, product_discount, product_discount_active, product_sku, product_google_bucket_id, product_ladybug_approved, product_product_active, product_num_in_stock, product_description, product_rating)
 
 }
 
@@ -8489,6 +8806,22 @@ func (rx *Rx) Create_PurchasedProduct(ctx context.Context,
 		return
 	}
 	return tx.Create_PurchasedProduct(ctx, purchased_product_id, purchased_product_vendor_pk, purchased_product_buyer_pk, purchased_product_product_pk, purchased_product_purchase_price)
+
+}
+
+func (rx *Rx) Create_TrialProduct(ctx context.Context,
+	trial_product_id TrialProduct_Id_Field,
+	trial_product_vendor_pk TrialProduct_VendorPk_Field,
+	trial_product_buyer_pk TrialProduct_BuyerPk_Field,
+	trial_product_product_pk TrialProduct_ProductPk_Field,
+	trial_product_trial_price TrialProduct_TrialPrice_Field,
+	trial_product_is_returned TrialProduct_IsReturned_Field) (
+	trial_product *TrialProduct, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Create_TrialProduct(ctx, trial_product_id, trial_product_vendor_pk, trial_product_buyer_pk, trial_product_product_pk, trial_product_trial_price, trial_product_is_returned)
 
 }
 
@@ -8692,6 +9025,16 @@ func (rx *Rx) Get_Product_By_Id(ctx context.Context,
 		return
 	}
 	return tx.Get_Product_By_Id(ctx, product_id)
+}
+
+func (rx *Rx) Get_Product_Pk_Product_Price_By_Id(ctx context.Context,
+	product_id Product_Id_Field) (
+	row *Pk_Price_Row, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Get_Product_Pk_Product_Price_By_Id(ctx, product_id)
 }
 
 func (rx *Rx) Get_VendorSession_VendorPk_By_Id(ctx context.Context,
@@ -8945,7 +9288,8 @@ type Methods interface {
 		product_ladybug_approved Product_LadybugApproved_Field,
 		product_product_active Product_ProductActive_Field,
 		product_num_in_stock Product_NumInStock_Field,
-		product_description Product_Description_Field) (
+		product_description Product_Description_Field,
+		product_rating Product_Rating_Field) (
 		err error)
 
 	CreateNoReturn_PurchasedProduct(ctx context.Context,
@@ -9054,7 +9398,8 @@ type Methods interface {
 		product_ladybug_approved Product_LadybugApproved_Field,
 		product_product_active Product_ProductActive_Field,
 		product_num_in_stock Product_NumInStock_Field,
-		product_description Product_Description_Field) (
+		product_description Product_Description_Field,
+		product_rating Product_Rating_Field) (
 		product *Product, err error)
 
 	Create_PurchasedProduct(ctx context.Context,
@@ -9064,6 +9409,15 @@ type Methods interface {
 		purchased_product_product_pk PurchasedProduct_ProductPk_Field,
 		purchased_product_purchase_price PurchasedProduct_PurchasePrice_Field) (
 		purchased_product *PurchasedProduct, err error)
+
+	Create_TrialProduct(ctx context.Context,
+		trial_product_id TrialProduct_Id_Field,
+		trial_product_vendor_pk TrialProduct_VendorPk_Field,
+		trial_product_buyer_pk TrialProduct_BuyerPk_Field,
+		trial_product_product_pk TrialProduct_ProductPk_Field,
+		trial_product_trial_price TrialProduct_TrialPrice_Field,
+		trial_product_is_returned TrialProduct_IsReturned_Field) (
+		trial_product *TrialProduct, err error)
 
 	Create_Vendor(ctx context.Context,
 		vendor_id Vendor_Id_Field,
@@ -9153,6 +9507,10 @@ type Methods interface {
 	Get_Product_By_Id(ctx context.Context,
 		product_id Product_Id_Field) (
 		product *Product, err error)
+
+	Get_Product_Pk_Product_Price_By_Id(ctx context.Context,
+		product_id Product_Id_Field) (
+		row *Pk_Price_Row, err error)
 
 	Get_VendorSession_VendorPk_By_Id(ctx context.Context,
 		vendor_session_id VendorSession_Id_Field) (

@@ -261,6 +261,7 @@ model product (
     field product_active   bool ( updatable )
     field num_in_stock     int  ( updatable )
     field description      text ( updatable )
+    field rating           float ( updatable ) //rating reflects the average of all product reviews
 )
 
 create product()
@@ -268,6 +269,11 @@ create product()
 create product ( noreturn )
 
 update product ( where product.pk = ? ) 
+
+read one (
+    select product.pk product.price
+    where product.id = ?
+)
 
 read one (
     select product
@@ -298,6 +304,19 @@ read count (
 )
 
 // -------------------------------------------------------------- //
+model product_review (
+    key pk
+    unique id
+    
+    field pk          serial64
+    field id          text
+    field buyer_pk    int64
+    field rating      float ( updatable )
+    field description text ( updatable )
+)
+
+
+// -------------------------------------------------------------- //
 model trial_product (
     key pk
     unique id
@@ -311,6 +330,8 @@ model trial_product (
     field trial_price    float
     field is_returned    bool ( updatable )
 )
+
+create trial_product ()
 
 // -------------------------------------------------------------- //
 model purchased_product (

@@ -111,6 +111,7 @@ type productOptions struct {
 	ProductActive   bool
 	NumInStock      int
 	Description     string
+	Rating          float32
 }
 
 //setDefaultOptions allows the caller of the function to pass in variables
@@ -151,6 +152,8 @@ func (h *serverTest) createProductsInDB(ctx context.Context, n int, vendor_pk in
 
 func (h *serverTest) createProductInDB(ctx context.Context, n int, vendor_pk int64,
 	options *productOptions) (product *database.Product) {
+	options.setDefaultProductOptions()
+
 	p, err := h.db.Create_Product(ctx,
 		database.Product_Id(uuid.NewV4().String()),
 		database.Product_VendorPk(vendor_pk),
@@ -163,6 +166,7 @@ func (h *serverTest) createProductInDB(ctx context.Context, n int, vendor_pk int
 		database.Product_ProductActive(options.ProductActive),
 		database.Product_NumInStock(options.NumInStock),
 		database.Product_Description(options.Description),
+		database.Product_Rating(options.Rating),
 	)
 	require.NoError(h.t, err)
 

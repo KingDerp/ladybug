@@ -1,6 +1,32 @@
 package server
 
-import "ladybug/database"
+import (
+	"time"
+
+	"ladybug/database"
+)
+
+const (
+	trialPeriodHours = 15
+)
+
+type TrialProduct struct {
+	Id           string  `json:"id"`
+	TrialPrice   float32 `json:"trialPrice"`
+	TrialEndDate int64   `json:"trialEndDate"`
+}
+
+func trialExpirationInUnixTime(t time.Time) int64 {
+	return t.Add(time.Hour * trialPeriodHours).Unix()
+}
+
+func TrialFromDB(trial *database.TrialProduct) *TrialProduct {
+	return &TrialProduct{
+		Id:           trial.Id,
+		TrialPrice:   trial.TrialPrice,
+		TrialEndDate: trialExpirationInUnixTime(trial.CreatedAt),
+	}
+}
 
 type Message struct {
 	Id            string `json:"id"`

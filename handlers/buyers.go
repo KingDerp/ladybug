@@ -325,3 +325,33 @@ func (u *buyerHandler) postBuyerMessageToConversation(w http.ResponseWriter, req
 	http.Error(w, "method not allowed", http.StatusBadRequest)
 	return
 }
+
+func (u *buyerHandler) buyerProductTrial(w http.ResponseWriter, req *http.Request) {
+	decoder := json.NewDecoder(req.Body)
+	var req server.StartProductTrialReq
+	err := decoder.Decode(&req)
+	if err != nil {
+		http.Error(w, "unable to parse json", http.StatusInternalServerError)
+		return
+	}
+
+	req.BuyerPk = GetBuyerPk(req.Context())
+
+	resp, err := u.buyerServer.StartProductTrial(ctx, req)
+	if err != nil {
+		http.Error(w, "unable to parse json", http.StatusInternalServerError)
+		return
+	}
+
+	b, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	h := w.Header()
+	h.Set("Content-Type", "application/json")
+	w.Write(b)
+
+	return
+}

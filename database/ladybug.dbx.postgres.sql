@@ -89,6 +89,16 @@ CREATE TABLE products (
 	product_active boolean NOT NULL,
 	num_in_stock integer NOT NULL,
 	description text NOT NULL,
+	rating real NOT NULL,
+	PRIMARY KEY ( pk ),
+	UNIQUE ( id )
+);
+CREATE TABLE product_reviews (
+	pk bigserial NOT NULL,
+	id text NOT NULL,
+	buyer_pk bigint NOT NULL,
+	rating real NOT NULL,
+	description text NOT NULL,
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
 );

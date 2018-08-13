@@ -30,19 +30,18 @@ func NewHandler(db *database.DB) *Handler {
 	mux.Handle("/buyer", a.CheckBuyerSessionCookie(http.HandlerFunc(u.buyer)))
 	mux.Handle("/products", http.HandlerFunc(u.buyerProducts))
 	//TODO make a /products/category endpoint that lets you search products by category
-	mux.Handle("/buyer/conversations",
-		a.CheckBuyerSessionCookie(http.HandlerFunc(u.getPagedBuyerConversations)))
-	mux.Handle("/buyer/conversations/unread",
-		a.CheckBuyerSessionCookie(http.HandlerFunc(u.getBuyerConversationsUnread)))
-	mux.Handle("/buyer/conversation",
-		a.CheckBuyerSessionCookie(http.HandlerFunc(u.pagedBuyerMessagesByConversationId)))
-	mux.Handle("/buyer/conversation/message",
-		a.CheckBuyerSessionCookie(http.HandlerFunc(u.postBuyerMessageToConversation)))
-	//mux.Handle("/buyer/messages", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
-	//mux.Handle("/buyer/messages/unread", a.CheckBuyerSessionCookie(http.HandlerFunc(u.sendBuyerMessage)))
-
+	mux.Handle("/buyer/conversations", a.CheckBuyerSessionCookie(http.HandlerFunc(u.getPagedBuyerConversations)))
 	//TODO make this function should mark a conversation as unread
-	//mux.Handle("/buyer/message/unread", a.CheckBuyerSessionCookie(http.HandlerFunc(u.unreadConversation)))
+	mux.Handle("/buyer/conversations/unread", a.CheckBuyerSessionCookie(http.HandlerFunc(u.getBuyerConversationsUnread)))
+	mux.Handle("/buyer/conversation", a.CheckBuyerSessionCookie(http.HandlerFunc(u.pagedBuyerMessagesByConversationId)))
+	mux.Handle("/buyer/conversation/message", a.CheckBuyerSessionCookie(http.HandlerFunc(u.postBuyerMessageToConversation)))
+
+	//Product endpoints
+	//2) get trial product
+	//3) buy a product
+	//1) review a product
+	//4) change product review
+	mux.Handle("/buyer/product/trial", a.CheckBuyerSessionCookie(http.HandlerFunc(u.buyerProductTrial)))
 
 	//vendor endpoints
 	mux.Handle("/vendor/sign-up", http.HandlerFunc(v.vendorSignUp))

@@ -1,6 +1,5 @@
 vendor/*
 database/database.go.old
-database/ladybug.dbx.go
 database/ladybug.dbx.sqlite3.sql
 database/postgres.sql.old
 

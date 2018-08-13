@@ -47,7 +47,8 @@ func (v *VendorServer) RegisterProduct(ctx context.Context, req *RegisterProduct
 			database.Product_LadybugApproved(false),
 			database.Product_ProductActive(req.ProductActive),
 			database.Product_NumInStock(req.NumberInStock),
-			database.Product_Description(req.Description))
+			database.Product_Description(req.Description),
+			database.Product_Rating(0))
 		if err != nil {
 			return err
 		}
