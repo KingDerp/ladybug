@@ -537,6 +537,17 @@ func (s *serverTest) createConversationInDB(buyer *database.Buyer, vendor *datab
 	return c
 }
 
+func (s *serverTest) createConversationsWithBuyers(vendor *database.Vendor, buyers []*database.Buyer) (
+	conversations []*database.Conversation) {
+
+	conversations = []*database.Conversation{}
+	for _, b := range buyers {
+		conversations = append(conversations, s.createConversationInDB(b, vendor))
+	}
+
+	return conversations
+}
+
 func (s *serverTest) createConversationsWithVendors(buyer *database.Buyer, vendors []*database.Vendor) (
 	conversations []*database.Conversation) {
 

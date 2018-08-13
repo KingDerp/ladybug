@@ -6,10 +6,6 @@ import (
 	"ladybug/database"
 )
 
-type Conversation struct {
-	Id string `json:"id"`
-}
-
 type BuyerConversationsUnreadReq struct {
 	BuyerPk int64
 }
@@ -50,21 +46,6 @@ type PagedBuyerConversationResp struct {
 	Conversations []*Conversation `json:"conversations"`
 }
 
-func ConversationFromDB(conv *database.Conversation) *Conversation {
-	return &Conversation{
-		Id: conv.Id,
-	}
-}
-
-func ConversationsFromDB(conversations []*database.Conversation) []*Conversation {
-	out := []*Conversation{}
-	for _, c := range conversations {
-		out = append(out, ConversationFromDB(c))
-	}
-
-	return out
-}
-
 func (u *BuyerServer) GetPagedBuyerConversations(ctx context.Context, req *PagedBuyerConversationsReq) (
 	resp *PagedBuyerConversationResp, err error) {
 
@@ -87,5 +68,4 @@ func (u *BuyerServer) GetPagedBuyerConversations(ctx context.Context, req *Paged
 		PageToken:     ctoken,
 		Conversations: ConversationsFromDB(conversations),
 	}, nil
-
 }

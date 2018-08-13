@@ -121,3 +121,41 @@ func (v *vendorHandler) vendorProduct(w http.ResponseWriter, req *http.Request) 
 	h.Set("Content-Type", "application/json")
 	w.Write(b)
 }
+
+func (v *vendorHandler) getPagedVendorConversations(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	if req.Method == "GET" {
+
+		decoder := json.NewDecoder(req.Body)
+		var conversation_req server.PagedVendorConversationReq
+		err := decoder.Decode(&conversation_req)
+		if err != nil {
+			http.Error(w, "unable to parse json", http.StatusInternalServerError)
+			return
+		}
+
+		conversation_req.VendorPk = GetVendorPk(req.Context())
+
+		conversations, err := v.vendorServer.GetPagedVendorConversations(ctx, &conversation_req)
+		if err != nil {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		b, err := json.Marshal(conversations)
+		if err != nil {
+			http.Error(w, "server error", http.StatusInternalServerError)
+			return
+		}
+
+		h := w.Header()
+		h.Set("Content-Type", "application/json")
+		w.Write(b)
+
+		return
+	}
+
+	http.Error(w, "method not allowed", http.StatusBadRequest)
+	return
+}

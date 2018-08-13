@@ -412,6 +412,12 @@ read paged (
     where conversation.buyer_pk = ?
 )
 
+read paged (
+    select conversation
+    where conversation.vendor_pk = ?
+)
+
+
 update conversation (
     where conversation.pk = ?
 )

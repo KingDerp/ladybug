@@ -83,6 +83,15 @@ func (h *serverTest) createBuyer(ctx context.Context, options *createBuyerInDBOp
 	return buyer
 }
 
+func (h *serverTest) createDefaultBuyers(ctx context.Context, n int) []*database.Buyer {
+	buyers := []*database.Buyer{}
+	for i := 0; i < n; i++ {
+		buyers = append(buyers, h.createBuyer(ctx, &createBuyerInDBOptions{}))
+	}
+
+	return buyers
+}
+
 func (h *serverTest) createVendorsInDB(ctx context.Context, n int) []*database.Vendor {
 	vendors := []*database.Vendor{}
 	for i := 0; i < n; i++ {
