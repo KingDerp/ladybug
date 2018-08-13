@@ -18,6 +18,37 @@ var (
 	defaultPassword = "Password8%"
 )
 
+func TestProductReview(t *testing.T) {
+	test := newTest(t)
+	defer test.tearDown()
+
+	ctx := context.Background()
+	vendor := test.createVendorInDB(ctx)
+	buyer := test.createBuyer(ctx, &createBuyerInDBOptions{})
+	product := test.createActiveAndApprovedProductInStock(ctx, vendor.Pk)
+
+	req := &ProductReviewReq{
+		BuyerPk:     buyer.Pk,
+		ProductId:   product.Id,
+		Stars:       1,
+		Description: "product did not fill the gaping hole consumerism has left!",
+	}
+
+	//buyer has not purchased the product
+	_, err := test.BuyerServer.ReviewProduct(ctx, req)
+	require.EqualError(t, err, "you cannot leave a review for a product you have not purchased")
+
+	//buyer has purchased
+	test.purchaseProduct(ctx, buyer.Pk, vendor.Pk, product)
+	resp, err := test.BuyerServer.ReviewProduct(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, resp.ReviewResponeMessage, "Thank you for leaving a review!")
+
+	//buyer has already left a review
+	_, err = test.BuyerServer.ReviewProduct(ctx, req)
+	require.EqualError(t, err, "you have already left a review for this product")
+}
+
 func TestStartTrialProduct(t *testing.T) {
 	test := newTest(t)
 	defer test.tearDown()
@@ -25,18 +56,18 @@ func TestStartTrialProduct(t *testing.T) {
 	ctx := context.Background()
 	vendor := test.createVendorInDB(ctx)
 	buyer := test.createBuyer(ctx, &createBuyerInDBOptions{})
-	products := test.createActiveAndApprovedProductsInStock(ctx, 1, vendor.Pk)
+	product := test.createActiveAndApprovedProductInStock(ctx, vendor.Pk)
 
 	req := &StartProductTrialReq{
 		BuyerPk:   buyer.Pk,
 		VendorId:  vendor.Id,
-		ProductId: products[0].Id,
+		ProductId: product.Id,
 	}
 
 	resp, err := test.BuyerServer.StartProductTrial(ctx, req)
 	require.NoError(t, err)
-	require.Equal(t, resp.TrialProduct.TrialPrice, products[0].Price)
-	require.Equal(t, resp.TrialProduct.TrialEndDate, trialExpirationInUnixTime(products[0].CreatedAt))
+	require.Equal(t, resp.TrialProduct.TrialPrice, product.Price)
+	require.Equal(t, resp.TrialProduct.TrialEndDate, trialExpirationInUnixTime(product.CreatedAt))
 }
 
 func TestIncrementConversationCount(t *testing.T) {

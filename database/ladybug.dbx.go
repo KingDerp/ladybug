@@ -369,7 +369,8 @@ CREATE TABLE product_reviews (
 	pk bigserial NOT NULL,
 	id text NOT NULL,
 	buyer_pk bigint NOT NULL,
-	rating real NOT NULL,
+	product_pk bigint NOT NULL,
+	rating integer NOT NULL,
 	description text NOT NULL,
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
@@ -608,7 +609,8 @@ CREATE TABLE product_reviews (
 	pk INTEGER NOT NULL,
 	id TEXT NOT NULL,
 	buyer_pk INTEGER NOT NULL,
-	rating REAL NOT NULL,
+	product_pk INTEGER NOT NULL,
+	rating INTEGER NOT NULL,
 	description TEXT NOT NULL,
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )
@@ -1978,7 +1980,8 @@ type ProductReview struct {
 	Pk          int64
 	Id          string
 	BuyerPk     int64
-	Rating      float32
+	ProductPk   int64
+	Rating      int
 	Description string
 }
 
@@ -2043,12 +2046,30 @@ func (f ProductReview_BuyerPk_Field) value() interface{} {
 
 func (ProductReview_BuyerPk_Field) _Column() string { return "buyer_pk" }
 
-type ProductReview_Rating_Field struct {
+type ProductReview_ProductPk_Field struct {
 	_set   bool
-	_value float32
+	_value int64
 }
 
-func ProductReview_Rating(v float32) ProductReview_Rating_Field {
+func ProductReview_ProductPk(v int64) ProductReview_ProductPk_Field {
+	return ProductReview_ProductPk_Field{_set: true, _value: v}
+}
+
+func (f ProductReview_ProductPk_Field) value() interface{} {
+	if !f._set {
+		return nil
+	}
+	return f._value
+}
+
+func (ProductReview_ProductPk_Field) _Column() string { return "product_pk" }
+
+type ProductReview_Rating_Field struct {
+	_set   bool
+	_value int
+}
+
+func ProductReview_Rating(v int) ProductReview_Rating_Field {
 	return ProductReview_Rating_Field{_set: true, _value: v}
 }
 
@@ -3750,6 +3771,59 @@ func (obj *postgresImpl) CreateNoReturn_Product(ctx context.Context,
 
 }
 
+func (obj *postgresImpl) Create_ProductReview(ctx context.Context,
+	product_review_id ProductReview_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field,
+	product_review_product_pk ProductReview_ProductPk_Field,
+	product_review_rating ProductReview_Rating_Field,
+	product_review_description ProductReview_Description_Field) (
+	product_review *ProductReview, err error) {
+	__id_val := product_review_id.value()
+	__buyer_pk_val := product_review_buyer_pk.value()
+	__product_pk_val := product_review_product_pk.value()
+	__rating_val := product_review_rating.value()
+	__description_val := product_review_description.value()
+
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO product_reviews ( id, buyer_pk, product_pk, rating, description ) VALUES ( ?, ?, ?, ?, ? ) RETURNING product_reviews.pk, product_reviews.id, product_reviews.buyer_pk, product_reviews.product_pk, product_reviews.rating, product_reviews.description")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __id_val, __buyer_pk_val, __product_pk_val, __rating_val, __description_val)
+
+	product_review = &ProductReview{}
+	err = obj.driver.QueryRow(__stmt, __id_val, __buyer_pk_val, __product_pk_val, __rating_val, __description_val).Scan(&product_review.Pk, &product_review.Id, &product_review.BuyerPk, &product_review.ProductPk, &product_review.Rating, &product_review.Description)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return product_review, nil
+
+}
+
+func (obj *postgresImpl) CreateNoReturn_ProductReview(ctx context.Context,
+	product_review_id ProductReview_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field,
+	product_review_product_pk ProductReview_ProductPk_Field,
+	product_review_rating ProductReview_Rating_Field,
+	product_review_description ProductReview_Description_Field) (
+	err error) {
+	__id_val := product_review_id.value()
+	__buyer_pk_val := product_review_buyer_pk.value()
+	__product_pk_val := product_review_product_pk.value()
+	__rating_val := product_review_rating.value()
+	__description_val := product_review_description.value()
+
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO product_reviews ( id, buyer_pk, product_pk, rating, description ) VALUES ( ?, ?, ?, ?, ? )")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __id_val, __buyer_pk_val, __product_pk_val, __rating_val, __description_val)
+
+	_, err = obj.driver.Exec(__stmt, __id_val, __buyer_pk_val, __product_pk_val, __rating_val, __description_val)
+	if err != nil {
+		return obj.makeErr(err)
+	}
+	return nil
+
+}
+
 func (obj *postgresImpl) Create_TrialProduct(ctx context.Context,
 	trial_product_id TrialProduct_Id_Field,
 	trial_product_vendor_pk TrialProduct_VendorPk_Field,
@@ -4514,6 +4588,47 @@ func (obj *postgresImpl) Count_Product_By_ProductActive_Equal_False(ctx context.
 	}
 
 	return count, nil
+
+}
+
+func (obj *postgresImpl) Has_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx context.Context,
+	product_id Product_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field) (
+	has bool, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT EXISTS( SELECT 1 FROM products  JOIN product_reviews ON products.pk = product_reviews.product_pk WHERE products.id = ? AND product_reviews.buyer_pk = ? )")
+
+	var __values []interface{}
+	__values = append(__values, product_id.value(), product_review_buyer_pk.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&has)
+	if err != nil {
+		return false, obj.makeErr(err)
+	}
+	return has, nil
+
+}
+
+func (obj *postgresImpl) Has_PurchasedProduct_By_BuyerPk(ctx context.Context,
+	purchased_product_buyer_pk PurchasedProduct_BuyerPk_Field) (
+	has bool, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT EXISTS( SELECT 1 FROM purchased_products WHERE purchased_products.buyer_pk = ? )")
+
+	var __values []interface{}
+	__values = append(__values, purchased_product_buyer_pk.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&has)
+	if err != nil {
+		return false, obj.makeErr(err)
+	}
+	return has, nil
 
 }
 
@@ -6173,6 +6288,62 @@ func (obj *sqlite3Impl) CreateNoReturn_Product(ctx context.Context,
 
 }
 
+func (obj *sqlite3Impl) Create_ProductReview(ctx context.Context,
+	product_review_id ProductReview_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field,
+	product_review_product_pk ProductReview_ProductPk_Field,
+	product_review_rating ProductReview_Rating_Field,
+	product_review_description ProductReview_Description_Field) (
+	product_review *ProductReview, err error) {
+	__id_val := product_review_id.value()
+	__buyer_pk_val := product_review_buyer_pk.value()
+	__product_pk_val := product_review_product_pk.value()
+	__rating_val := product_review_rating.value()
+	__description_val := product_review_description.value()
+
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO product_reviews ( id, buyer_pk, product_pk, rating, description ) VALUES ( ?, ?, ?, ?, ? )")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __id_val, __buyer_pk_val, __product_pk_val, __rating_val, __description_val)
+
+	__res, err := obj.driver.Exec(__stmt, __id_val, __buyer_pk_val, __product_pk_val, __rating_val, __description_val)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	__pk, err := __res.LastInsertId()
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return obj.getLastProductReview(ctx, __pk)
+
+}
+
+func (obj *sqlite3Impl) CreateNoReturn_ProductReview(ctx context.Context,
+	product_review_id ProductReview_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field,
+	product_review_product_pk ProductReview_ProductPk_Field,
+	product_review_rating ProductReview_Rating_Field,
+	product_review_description ProductReview_Description_Field) (
+	err error) {
+	__id_val := product_review_id.value()
+	__buyer_pk_val := product_review_buyer_pk.value()
+	__product_pk_val := product_review_product_pk.value()
+	__rating_val := product_review_rating.value()
+	__description_val := product_review_description.value()
+
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO product_reviews ( id, buyer_pk, product_pk, rating, description ) VALUES ( ?, ?, ?, ?, ? )")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __id_val, __buyer_pk_val, __product_pk_val, __rating_val, __description_val)
+
+	_, err = obj.driver.Exec(__stmt, __id_val, __buyer_pk_val, __product_pk_val, __rating_val, __description_val)
+	if err != nil {
+		return obj.makeErr(err)
+	}
+	return nil
+
+}
+
 func (obj *sqlite3Impl) Create_TrialProduct(ctx context.Context,
 	trial_product_id TrialProduct_Id_Field,
 	trial_product_vendor_pk TrialProduct_VendorPk_Field,
@@ -6952,6 +7123,47 @@ func (obj *sqlite3Impl) Count_Product_By_ProductActive_Equal_False(ctx context.C
 	}
 
 	return count, nil
+
+}
+
+func (obj *sqlite3Impl) Has_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx context.Context,
+	product_id Product_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field) (
+	has bool, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT EXISTS( SELECT 1 FROM products  JOIN product_reviews ON products.pk = product_reviews.product_pk WHERE products.id = ? AND product_reviews.buyer_pk = ? )")
+
+	var __values []interface{}
+	__values = append(__values, product_id.value(), product_review_buyer_pk.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&has)
+	if err != nil {
+		return false, obj.makeErr(err)
+	}
+	return has, nil
+
+}
+
+func (obj *sqlite3Impl) Has_PurchasedProduct_By_BuyerPk(ctx context.Context,
+	purchased_product_buyer_pk PurchasedProduct_BuyerPk_Field) (
+	has bool, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT EXISTS( SELECT 1 FROM purchased_products WHERE purchased_products.buyer_pk = ? )")
+
+	var __values []interface{}
+	__values = append(__values, purchased_product_buyer_pk.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&has)
+	if err != nil {
+		return false, obj.makeErr(err)
+	}
+	return has, nil
 
 }
 
@@ -8047,6 +8259,24 @@ func (obj *sqlite3Impl) getLastProduct(ctx context.Context,
 
 }
 
+func (obj *sqlite3Impl) getLastProductReview(ctx context.Context,
+	pk int64) (
+	product_review *ProductReview, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT product_reviews.pk, product_reviews.id, product_reviews.buyer_pk, product_reviews.product_pk, product_reviews.rating, product_reviews.description FROM product_reviews WHERE _rowid_ = ?")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, pk)
+
+	product_review = &ProductReview{}
+	err = obj.driver.QueryRow(__stmt, pk).Scan(&product_review.Pk, &product_review.Id, &product_review.BuyerPk, &product_review.ProductPk, &product_review.Rating, &product_review.Description)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return product_review, nil
+
+}
+
 func (obj *sqlite3Impl) getLastTrialProduct(ctx context.Context,
 	pk int64) (
 	trial_product *TrialProduct, err error) {
@@ -8586,6 +8816,21 @@ func (rx *Rx) CreateNoReturn_Product(ctx context.Context,
 
 }
 
+func (rx *Rx) CreateNoReturn_ProductReview(ctx context.Context,
+	product_review_id ProductReview_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field,
+	product_review_product_pk ProductReview_ProductPk_Field,
+	product_review_rating ProductReview_Rating_Field,
+	product_review_description ProductReview_Description_Field) (
+	err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.CreateNoReturn_ProductReview(ctx, product_review_id, product_review_buyer_pk, product_review_product_pk, product_review_rating, product_review_description)
+
+}
+
 func (rx *Rx) CreateNoReturn_PurchasedProduct(ctx context.Context,
 	purchased_product_id PurchasedProduct_Id_Field,
 	purchased_product_vendor_pk PurchasedProduct_VendorPk_Field,
@@ -8791,6 +9036,21 @@ func (rx *Rx) Create_Product(ctx context.Context,
 		return
 	}
 	return tx.Create_Product(ctx, product_id, product_vendor_pk, product_price, product_discount, product_discount_active, product_sku, product_google_bucket_id, product_ladybug_approved, product_product_active, product_num_in_stock, product_description, product_rating)
+
+}
+
+func (rx *Rx) Create_ProductReview(ctx context.Context,
+	product_review_id ProductReview_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field,
+	product_review_product_pk ProductReview_ProductPk_Field,
+	product_review_rating ProductReview_Rating_Field,
+	product_review_description ProductReview_Description_Field) (
+	product_review *ProductReview, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Create_ProductReview(ctx, product_review_id, product_review_buyer_pk, product_review_product_pk, product_review_rating, product_review_description)
 
 }
 
@@ -9057,6 +9317,27 @@ func (rx *Rx) Get_Vendor_Pk_By_Id(ctx context.Context,
 	return tx.Get_Vendor_Pk_By_Id(ctx, vendor_id)
 }
 
+func (rx *Rx) Has_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx context.Context,
+	product_id Product_Id_Field,
+	product_review_buyer_pk ProductReview_BuyerPk_Field) (
+	has bool, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Has_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx, product_id, product_review_buyer_pk)
+}
+
+func (rx *Rx) Has_PurchasedProduct_By_BuyerPk(ctx context.Context,
+	purchased_product_buyer_pk PurchasedProduct_BuyerPk_Field) (
+	has bool, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Has_PurchasedProduct_By_BuyerPk(ctx, purchased_product_buyer_pk)
+}
+
 func (rx *Rx) Limited_Message_By_ConversationPk_OrderBy_Desc_CreatedAt(ctx context.Context,
 	message_conversation_pk Message_ConversationPk_Field,
 	limit int, offset int64) (
@@ -9292,6 +9573,14 @@ type Methods interface {
 		product_rating Product_Rating_Field) (
 		err error)
 
+	CreateNoReturn_ProductReview(ctx context.Context,
+		product_review_id ProductReview_Id_Field,
+		product_review_buyer_pk ProductReview_BuyerPk_Field,
+		product_review_product_pk ProductReview_ProductPk_Field,
+		product_review_rating ProductReview_Rating_Field,
+		product_review_description ProductReview_Description_Field) (
+		err error)
+
 	CreateNoReturn_PurchasedProduct(ctx context.Context,
 		purchased_product_id PurchasedProduct_Id_Field,
 		purchased_product_vendor_pk PurchasedProduct_VendorPk_Field,
@@ -9401,6 +9690,14 @@ type Methods interface {
 		product_description Product_Description_Field,
 		product_rating Product_Rating_Field) (
 		product *Product, err error)
+
+	Create_ProductReview(ctx context.Context,
+		product_review_id ProductReview_Id_Field,
+		product_review_buyer_pk ProductReview_BuyerPk_Field,
+		product_review_product_pk ProductReview_ProductPk_Field,
+		product_review_rating ProductReview_Rating_Field,
+		product_review_description ProductReview_Description_Field) (
+		product_review *ProductReview, err error)
 
 	Create_PurchasedProduct(ctx context.Context,
 		purchased_product_id PurchasedProduct_Id_Field,
@@ -9519,6 +9816,15 @@ type Methods interface {
 	Get_Vendor_Pk_By_Id(ctx context.Context,
 		vendor_id Vendor_Id_Field) (
 		row *Pk_Row, err error)
+
+	Has_ProductReview_By_Product_Id_And_ProductReview_BuyerPk(ctx context.Context,
+		product_id Product_Id_Field,
+		product_review_buyer_pk ProductReview_BuyerPk_Field) (
+		has bool, err error)
+
+	Has_PurchasedProduct_By_BuyerPk(ctx context.Context,
+		purchased_product_buyer_pk PurchasedProduct_BuyerPk_Field) (
+		has bool, err error)
 
 	Limited_Message_By_ConversationPk_OrderBy_Desc_CreatedAt(ctx context.Context,
 		message_conversation_pk Message_ConversationPk_Field,

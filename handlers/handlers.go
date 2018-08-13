@@ -42,6 +42,7 @@ func NewHandler(db *database.DB) *Handler {
 	//1) review a product
 	//4) change product review
 	mux.Handle("/buyer/product/trial", a.CheckBuyerSessionCookie(http.HandlerFunc(u.buyerProductTrial)))
+	mux.Handle("/buyer/product/review", a.CheckBuyerSessionCookie(http.HandlerFunc(u.buyerProductReview)))
 
 	//vendor endpoints
 	mux.Handle("/vendor/sign-up", http.HandlerFunc(v.vendorSignUp))

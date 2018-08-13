@@ -97,7 +97,8 @@ CREATE TABLE product_reviews (
 	pk bigserial NOT NULL,
 	id text NOT NULL,
 	buyer_pk bigint NOT NULL,
-	rating real NOT NULL,
+	product_pk bigint NOT NULL,
+	rating integer NOT NULL,
 	description text NOT NULL,
 	PRIMARY KEY ( pk ),
 	UNIQUE ( id )

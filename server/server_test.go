@@ -143,14 +143,14 @@ func (h *serverTest) createProductsInDB(ctx context.Context, n int, vendor_pk in
 	products = []*database.Product{}
 
 	for i := 0; i < n; i++ {
-		p := h.createProductInDB(ctx, n, vendor_pk, options)
+		p := h.createProductInDB(ctx, vendor_pk, options)
 		products = append(products, p)
 	}
 
 	return products
 }
 
-func (h *serverTest) createProductInDB(ctx context.Context, n int, vendor_pk int64,
+func (h *serverTest) createProductInDB(ctx context.Context, vendor_pk int64,
 	options *productOptions) (product *database.Product) {
 	options.setDefaultProductOptions()
 
@@ -171,6 +171,30 @@ func (h *serverTest) createProductInDB(ctx context.Context, n int, vendor_pk int
 	require.NoError(h.t, err)
 
 	return p
+}
+
+func (h *serverTest) purchaseProduct(ctx context.Context, buyer_pk, vendor_pk int64,
+	product *database.Product) (purchased_product *database.PurchasedProduct) {
+	p, err := h.db.Create_PurchasedProduct(ctx,
+		database.PurchasedProduct_Id(uuid.NewV4().String()),
+		database.PurchasedProduct_VendorPk(vendor_pk),
+		database.PurchasedProduct_BuyerPk(buyer_pk),
+		database.PurchasedProduct_ProductPk(product.Pk),
+		database.PurchasedProduct_PurchasePrice(product.Price),
+	)
+	require.NoError(h.t, err)
+
+	return p
+}
+
+func (h *serverTest) createActiveAndApprovedProductInStock(ctx context.Context, vendor_pk int64) (
+	product *database.Product) {
+	return h.createProductInDB(ctx, vendor_pk,
+		&productOptions{
+			ProductActive:   true,
+			LadybugApproved: true,
+			NumInStock:      10,
+		})
 }
 
 func (h *serverTest) createActiveAndApprovedProductsInStock(ctx context.Context, n int, vendor_pk int64) (

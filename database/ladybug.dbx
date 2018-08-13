@@ -311,8 +311,20 @@ model product_review (
     field pk          serial64
     field id          text
     field buyer_pk    int64
-    field rating      float ( updatable )
+    field product_pk  int64
+    field rating      int ( updatable )
     field description text ( updatable )
+)
+
+create product_review ()
+
+create product_review ( noreturn )
+
+read has (
+    select product_review
+    join product.pk = product_review.product_pk
+    where product.id = ?
+    where product_review.buyer_pk = ?
 )
 
 
@@ -350,6 +362,11 @@ model purchased_product (
 create purchased_product()
 
 create purchased_product( noreturn )
+
+read has (
+    select purchased_product
+    where purchased_product.buyer_pk = ?
+)
 
 
 // -------------------------------------------------------------- //
