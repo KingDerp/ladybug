@@ -3,7 +3,7 @@
     <div id="nav">
       <router-link to="/">Home</router-link> |
       <router-link to="/buyer-sign-up">Sign-Up</router-link> |
-      <router-link to="/buyer-sign-in">Sign-In</router-link> |
+      <router-link to="/buyer-login">Sign-In</router-link> |
     </div>
     <router-view/>
   </div>

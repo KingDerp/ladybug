@@ -42,6 +42,7 @@ func NewHandler(db *database.DB) *Handler {
 	//v := newVendorHandler(vs)
 
 	r.Post("/api/buyer/sign-up", http.HandlerFunc(u.buyerSignUp))
+	r.Post("/api/buyer/login", http.HandlerFunc(u.buyerLogin))
 
 	/*
 		mux := http.NewServeMux()

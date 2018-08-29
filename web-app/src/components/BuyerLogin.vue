@@ -5,13 +5,14 @@
     <p>Email is: {{ email }}</p>
     <input v-model="password" placeholder="edit me">
     <p>Password is: {{ password }}</p>
+    <button @click="submitLogin">Log In</button>
   </div>
 </template>
 
 <script>
 
 export default {
-  name: 'BuyerSingIn',
+  name: 'BuyerLogin',
   props: {
     msg: String
   },
@@ -22,19 +23,19 @@ export default {
     }
   },
   methods: {
-    submitSignIn() {
+    submitLogin() {
       console.log("email: " + this.email);
       console.log("password: " + this.password);
 
 
-      const buyerSignInRequest = {
+      const buyerLoginRequest = {
         email: this.email,
         password: this.password
       };
 
-      console.log(buyerSignInRequest);
+      console.log(buyerLoginRequest);
 
-      this.$store.dispatch('buyerSignIn', buyerSignInRequest);
+      this.$store.dispatch('buyerLogin', buyerLoginRequest);
     } 
   }
 }

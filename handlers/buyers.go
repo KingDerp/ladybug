@@ -123,11 +123,6 @@ func (u *buyerHandler) buyerSignUp(w http.ResponseWriter, req *http.Request) {
 }
 
 func (u *buyerHandler) buyerLogin(w http.ResponseWriter, req *http.Request) {
-	if req.Method != "POST" {
-		http.Error(w, "method not allowed", http.StatusBadRequest)
-		return
-	}
-
 	ctx := req.Context()
 
 	decoder := json.NewDecoder(req.Body)

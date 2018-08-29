@@ -2,7 +2,7 @@ import Vue from 'vue'
 import Router from 'vue-router'
 import Home from './views/Home.vue'
 import BuyerSignUp from './views/BuyerSignUp.vue'
-import BuyerSignIn from './views/BuyerSignIn.vue'
+import BuyerLogin from './views/BuyerLogin.vue'
 
 Vue.use(Router)
 
@@ -19,9 +19,9 @@ export default new Router({
       component: BuyerSignUp
     },
     {
-      path: '/buyer-sign-in',
-      name: 'buyer-sign-in',
-      component: BuyerSignIn
+      path: '/buyer-login',
+      name: 'buyer-login',
+      component: BuyerLogin
     },
     {
       path: '/about',

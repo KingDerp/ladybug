@@ -123,10 +123,19 @@ func (u *BuyerServer) BuyerLogIn(ctx context.Context, req *LogInRequest) (
 	var session *database.BuyerSession
 	err = u.db.WithTx(ctx, func(ctx context.Context, tx *database.Tx) error {
 
-		session, err = tx.Create_BuyerSession(ctx, database.BuyerSession_BuyerPk(email.BuyerPk),
-			database.BuyerSession_Id(uuid.NewV4().String()))
+		session, err = tx.First_BuyerSession_By_BuyerPk(ctx,
+			database.BuyerSession_BuyerPk(email.BuyerPk))
 		if err != nil {
 			return err
+		}
+
+		if session == nil {
+			session, err = tx.Create_BuyerSession(ctx,
+				database.BuyerSession_BuyerPk(email.BuyerPk),
+				database.BuyerSession_Id(uuid.NewV4().String()))
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
