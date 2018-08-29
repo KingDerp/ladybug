@@ -15,7 +15,7 @@ import (
 var (
 	addressFlag = flag.String(
 		"address",
-		":8080",
+		":8081",
 		"the address ladybug binds to")
 )
 
@@ -32,7 +32,8 @@ func main() {
 func run(ctx context.Context) error {
 
 	db, err := database.Open("postgres",
-		"postgres://localhost/ladybug?user=ladybug&password=something_stupid")
+		//"postgres://localhost/ladybug?user=ladybug&password=something_stupid")
+		"postgres://ladybug:something_stupid@localhost/ladybug")
 	if err != nil {
 		return err
 	}

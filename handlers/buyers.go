@@ -3,12 +3,13 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"ladybug/database"
-	"ladybug/server"
 	"net/http"
 	"time"
 
 	"github.com/sirupsen/logrus"
+
+	"ladybug/database"
+	"ladybug/server"
 )
 
 type contextKey int
@@ -101,15 +102,11 @@ func (u *buyerHandler) buyerSignUp(w http.ResponseWriter, req *http.Request) {
 
 	ctx := req.Context()
 
-	if req.Method != "POST" {
-		http.Error(w, "method not allowed", http.StatusBadRequest)
-		return
-	}
-
 	decoder := json.NewDecoder(req.Body)
 	var sign_up_req server.SignUpRequest
 	err := decoder.Decode(&sign_up_req)
 	if err != nil {
+		logrus.Errorf("%+v", err)
 		http.Error(w, "unable to parse json", http.StatusInternalServerError)
 		return
 	}

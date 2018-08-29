@@ -2,12 +2,14 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/zeebo/errs"
+	"gopkg.in/spacemonkeygo/dbx.v1/prettyprint"
 
 	"ladybug/database"
 	"ladybug/validate"
@@ -29,6 +31,8 @@ type SignUpResponse struct {
 func (u *BuyerServer) BuyerSignUp(ctx context.Context, req *SignUpRequest) (resp *SignUpResponse,
 	err error) {
 
+	fmt.Println("entered sign up server")
+	prettyprint.Println(req)
 	err = ValidateBuyerSignUpRequest(req)
 	if err != nil {
 		return nil, err
@@ -45,9 +49,11 @@ func (u *BuyerServer) BuyerSignUp(ctx context.Context, req *SignUpRequest) (resp
 		buyer, err := tx.Create_Buyer(ctx, database.Buyer_Id(uuid.NewV4().String()),
 			database.Buyer_FirstName(req.FirstName), database.Buyer_LastName(req.LastName))
 		if err != nil {
+			fmt.Println("error is here")
 			return err
 		}
 
+		fmt.Println("BLAH")
 		err = tx.CreateNoReturn_BuyerEmail(ctx,
 			database.BuyerEmail_BuyerPk(buyer.Pk),
 			database.BuyerEmail_Address(strings.ToLower(req.Email)),
@@ -62,6 +68,7 @@ func (u *BuyerServer) BuyerSignUp(ctx context.Context, req *SignUpRequest) (resp
 			return err
 		}
 
+		fmt.Println("BLAH1")
 		err = tx.CreateNoReturn_Address(ctx, database.Address_BuyerPk(buyer.Pk),
 			database.Address_StreetAddress(req.BillingAddress.StreetAddress),
 			database.Address_City(req.BillingAddress.City),
@@ -69,6 +76,10 @@ func (u *BuyerServer) BuyerSignUp(ctx context.Context, req *SignUpRequest) (resp
 			database.Address_Zip(req.BillingAddress.Zip),
 			database.Address_IsBilling(true),
 			database.Address_Id(uuid.NewV4().String()))
+		if err != nil {
+			return err
+		}
+		fmt.Println("BLAH2")
 
 		if !validate.AddressIsEmpty(req.ShippingAddress) {
 			err = tx.CreateNoReturn_Address(ctx, database.Address_BuyerPk(buyer.Pk),
@@ -79,6 +90,7 @@ func (u *BuyerServer) BuyerSignUp(ctx context.Context, req *SignUpRequest) (resp
 				database.Address_IsBilling(false),
 				database.Address_Id(uuid.NewV4().String()))
 		}
+		fmt.Println("BLAH3")
 
 		session, err = tx.Create_BuyerSession(ctx, database.BuyerSession_BuyerPk(buyer.Pk),
 			database.BuyerSession_Id(uuid.NewV4().String()))
